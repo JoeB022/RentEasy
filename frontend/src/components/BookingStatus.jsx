@@ -1,37 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Transition } from '@headlessui/react';
 import toast from 'react-hot-toast';
 
-const BookingStatus = () => {
-  const [bookings, setBookings] = useState([
-    {
-      id: 1,
-      property: '2 Bedroom Apartment, Nairobi',
-      date: '2025-06-15',
-      status: 'Pending',
-    },
-    {
-      id: 2,
-      property: 'Studio in Kilimani',
-      date: '2025-06-10',
-      status: 'Approved',
-    },
-    {
-      id: 3,
-      property: '3 Bedroom House, Westlands',
-      date: '2025-06-05',
-      status: 'Cancelled',
-    },
-  ]);
-
-  const [activeFilter, setActiveFilter] = useState('All');
-
-  const statusClass = {
-    Pending: 'bg-yellow-100 text-yellow-700',
-    Approved: 'bg-green-100 text-green-700',
-    Cancelled: 'bg-red-100 text-red-700',
-  };
-
+const BookingStatus = ({ bookings, setBookings }) => {
   const handleCancel = (id) => {
     const updated = bookings.map((b) =>
       b.id === id ? { ...b, status: 'Cancelled' } : b
@@ -51,17 +22,24 @@ const BookingStatus = () => {
   };
 
   const filters = ['All', 'Pending', 'Approved', 'Cancelled'];
+  const [activeFilter, setActiveFilter] = React.useState('All');
 
   const filteredBookings =
     activeFilter === 'All'
       ? bookings
       : bookings.filter((b) => b.status === activeFilter);
 
+  const statusClass = {
+    Pending: 'bg-yellow-100 text-yellow-700',
+    Approved: 'bg-green-100 text-green-700',
+    Cancelled: 'bg-red-100 text-red-700',
+  };
+
   return (
     <div className="mb-10">
       <h2 className="text-2xl font-bold text-[#003B4C] mb-4">Booking Status</h2>
 
-      {/* Filter Buttons */}
+      {/* Filter */}
       <div className="mb-6 flex flex-wrap gap-2">
         {filters.map((filter) => (
           <button
@@ -78,7 +56,6 @@ const BookingStatus = () => {
         ))}
       </div>
 
-      {/* Table */}
       {filteredBookings.length === 0 ? (
         <p className="text-gray-500">
           No {activeFilter.toLowerCase()} bookings found.
@@ -98,18 +75,17 @@ const BookingStatus = () => {
               {filteredBookings.map((booking) => (
                 <Transition
                   key={booking.id}
-                  appear
                   show={true}
                   enter="transition-opacity duration-500 ease-out"
                   enterFrom="opacity-0 -translate-y-2"
                   enterTo="opacity-100 translate-y-0"
                 >
-                  <tr className="hover:bg-gray-50 transition-all duration-200 ease-in-out">
+                  <tr className="hover:bg-gray-50 transition duration-200 ease-in-out">
                     <td className="px-6 py-4">{booking.property}</td>
                     <td className="px-6 py-4">{booking.date}</td>
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold transition duration-300 ease-in-out ${statusClass[booking.status]}`}
+                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${statusClass[booking.status]}`}
                       >
                         {booking.status}
                       </span>
@@ -119,13 +95,13 @@ const BookingStatus = () => {
                         <>
                           <button
                             onClick={() => handleCancel(booking.id)}
-                            className="text-red-600 hover:underline text-xs transition duration-150"
+                            className="text-red-600 hover:underline text-xs"
                           >
                             Cancel
                           </button>
                           <button
                             onClick={() => handleReschedule(booking.id)}
-                            className="text-blue-600 hover:underline text-xs transition duration-150"
+                            className="text-blue-600 hover:underline text-xs"
                           >
                             Reschedule
                           </button>
