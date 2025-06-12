@@ -1,10 +1,9 @@
-// components/PropertyList.jsx
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 
 const PropertyList = ({ onBook }) => {
   const [filter, setFilter] = useState({ location: '', price: '', available: true });
 
-  // Property data with unique IDs
   const properties = [
     {
       id: 1,
@@ -51,7 +50,7 @@ const PropertyList = ({ onBook }) => {
       available: true,
       amenities: ['Fully furnished', 'Wi-Fi', 'Parking', 'Balcony'],
     },
-     {
+    {
       id: 5,
       name: '3 Bedroom Apartment',
       location: 'Rwaka',
@@ -62,13 +61,17 @@ const PropertyList = ({ onBook }) => {
     },
   ];
 
-  // Filter logic
   const filtered = properties.filter((p) => {
     const matchLocation = p.location.toLowerCase().includes(filter.location.toLowerCase());
     const matchPrice = !filter.price || p.price <= parseInt(filter.price);
     const matchAvailable = filter.available ? p.available : true;
     return matchLocation && matchPrice && matchAvailable;
   });
+
+  const handleExpressInterest = (property) => {
+    toast.success(`📨 Interest sent for ${property.name} in ${property.location}`);
+    if (onBook) onBook(property);
+  };
 
   return (
     <div className="mb-10">
@@ -101,7 +104,9 @@ const PropertyList = ({ onBook }) => {
             />
             <h3 className="text-lg font-bold">{property.name}</h3>
             <p className="text-sm text-gray-500">{property.location}</p>
-            <p className="text-sm text-gray-700">Ksh {property.price.toLocaleString()}</p>
+            <p className="text-sm text-gray-700">
+              Ksh {property.price.toLocaleString()}
+            </p>
             <ul className="text-xs mt-2 text-gray-500">
               {property.amenities.map((a, i) => (
                 <li key={i}>• {a}</li>
@@ -109,7 +114,7 @@ const PropertyList = ({ onBook }) => {
             </ul>
             <button
               className="mt-3 w-full bg-[#003B4C] text-white py-2 rounded-md hover:bg-blue-700 transition"
-              onClick={() => onBook(property)}
+              onClick={() => handleExpressInterest(property)}
             >
               Express Interest
             </button>
@@ -117,7 +122,9 @@ const PropertyList = ({ onBook }) => {
         ))}
 
         {filtered.length === 0 && (
-          <p className="text-gray-500 col-span-full">No properties found matching your filters.</p>
+          <p className="text-gray-500 col-span-full">
+            No properties found matching your filters.
+          </p>
         )}
       </div>
     </div>

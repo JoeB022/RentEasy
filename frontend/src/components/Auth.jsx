@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 
 const Auth = ({ mode = 'login', onClose }) => {
   const [activeTab, setActiveTab] = useState(mode);
@@ -16,7 +17,7 @@ const Auth = ({ mode = 'login', onClose }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (activeTab === 'signup' && formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match!');
+      toast.error('❌ Passwords do not match!');
       return;
     }
 
@@ -26,6 +27,14 @@ const Auth = ({ mode = 'login', onClose }) => {
       role,
       ...formData,
     });
+
+    toast.success(
+      activeTab === 'login'
+        ? '✅ Logged in successfully!'
+        : '🎉 Account created successfully!'
+    );
+
+    if (onClose) onClose(); // close the modal after success
   };
 
   return (

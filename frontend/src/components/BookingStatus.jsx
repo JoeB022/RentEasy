@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Transition } from '@headlessui/react';
+import toast from 'react-hot-toast';
 
 const BookingStatus = () => {
   const [bookings, setBookings] = useState([
@@ -22,6 +24,8 @@ const BookingStatus = () => {
     },
   ]);
 
+  const [activeFilter, setActiveFilter] = useState('All');
+
   const statusClass = {
     Pending: 'bg-yellow-100 text-yellow-700',
     Approved: 'bg-green-100 text-green-700',
@@ -33,69 +37,107 @@ const BookingStatus = () => {
       b.id === id ? { ...b, status: 'Cancelled' } : b
     );
     setBookings(updated);
-    alert('Booking cancelled.');
+    toast.error('❌ Booking cancelled.');
   };
 
   const handleReschedule = (id) => {
-    const newDate = prompt('Enter new date (YYYY-MM-DD):');
+    const newDate = prompt('📅 Enter new date (YYYY-MM-DD):');
     if (!newDate) return;
     const updated = bookings.map((b) =>
       b.id === id ? { ...b, date: newDate } : b
     );
     setBookings(updated);
-    alert('Booking rescheduled.');
+    toast.success('✅ Booking rescheduled!');
   };
+
+  const filters = ['All', 'Pending', 'Approved', 'Cancelled'];
+
+  const filteredBookings =
+    activeFilter === 'All'
+      ? bookings
+      : bookings.filter((b) => b.status === activeFilter);
 
   return (
     <div className="mb-10">
-      <h2 className="text-xl font-semibold mb-4">Booking Status</h2>
+      <h2 className="text-2xl font-bold text-[#003B4C] mb-4">Booking Status</h2>
 
-      {bookings.length === 0 ? (
-        <p className="text-gray-500">You have no bookings yet.</p>
+      {/* Filter Buttons */}
+      <div className="mb-6 flex flex-wrap gap-2">
+        {filters.map((filter) => (
+          <button
+            key={filter}
+            onClick={() => setActiveFilter(filter)}
+            className={`px-4 py-1 text-sm rounded-full border transition-all duration-200 ${
+              activeFilter === filter
+                ? 'bg-[#003B4C] text-white border-[#003B4C]'
+                : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+            }`}
+          >
+            {filter}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      {filteredBookings.length === 0 ? (
+        <p className="text-gray-500">
+          No {activeFilter.toLowerCase()} bookings found.
+        </p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border text-sm text-left">
+        <div className="overflow-x-auto shadow rounded-lg">
+          <table className="min-w-full bg-white rounded-lg overflow-hidden text-sm">
             <thead>
-              <tr className="bg-gray-100 text-gray-700">
-                <th className="px-4 py-2">Property</th>
-                <th className="px-4 py-2">Date</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Actions</th>
+              <tr className="bg-[#E6F8FA] text-[#003B4C] text-left">
+                <th className="px-6 py-3 font-semibold">Property</th>
+                <th className="px-6 py-3 font-semibold">Date</th>
+                <th className="px-6 py-3 font-semibold">Status</th>
+                <th className="px-6 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {bookings.map((booking) => (
-                <tr key={booking.id} className="border-b">
-                  <td className="px-4 py-2">{booking.property}</td>
-                  <td className="px-4 py-2">{booking.date}</td>
-                  <td className="px-4 py-2">
-                    <span
-                      className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusClass[booking.status]}`}
-                    >
-                      {booking.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2 space-x-2">
-                    {booking.status !== 'Cancelled' ? (
-                      <>
-                        <button
-                          onClick={() => handleCancel(booking.id)}
-                          className="text-red-600 hover:underline text-xs"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => handleReschedule(booking.id)}
-                          className="text-blue-600 hover:underline text-xs"
-                        >
-                          Reschedule
-                        </button>
-                      </>
-                    ) : (
-                      <span className="text-gray-400 text-xs italic">No actions</span>
-                    )}
-                  </td>
-                </tr>
+            <tbody className="divide-y divide-gray-200">
+              {filteredBookings.map((booking) => (
+                <Transition
+                  key={booking.id}
+                  appear
+                  show={true}
+                  enter="transition-opacity duration-500 ease-out"
+                  enterFrom="opacity-0 -translate-y-2"
+                  enterTo="opacity-100 translate-y-0"
+                >
+                  <tr className="hover:bg-gray-50 transition-all duration-200 ease-in-out">
+                    <td className="px-6 py-4">{booking.property}</td>
+                    <td className="px-6 py-4">{booking.date}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold transition duration-300 ease-in-out ${statusClass[booking.status]}`}
+                      >
+                        {booking.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 space-x-3">
+                      {booking.status !== 'Cancelled' ? (
+                        <>
+                          <button
+                            onClick={() => handleCancel(booking.id)}
+                            className="text-red-600 hover:underline text-xs transition duration-150"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => handleReschedule(booking.id)}
+                            className="text-blue-600 hover:underline text-xs transition duration-150"
+                          >
+                            Reschedule
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-gray-400 text-xs italic">
+                          No actions
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                </Transition>
               ))}
             </tbody>
           </table>

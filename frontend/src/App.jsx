@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -25,8 +26,10 @@ function App() {
   return (
     <Router>
       <div className="relative bg-[#f9fafb] min-h-screen flex flex-col">
+        {/* Header */}
         <Header onAuthOpen={handleAuthOpen} />
 
+        {/* Main Content */}
         <main className="flex-grow">
           <Routes>
             <Route
@@ -42,8 +45,10 @@ function App() {
           </Routes>
         </main>
 
+        {/* Footer */}
         <Footer />
 
+        {/* Auth Modal */}
         {showAuth && (
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
             <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
@@ -57,6 +62,34 @@ function App() {
             </div>
           </div>
         )}
+
+        {/* 🔔 Global Toast Notifications */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#003B4C',
+              color: '#ffffff',
+              fontSize: '0.875rem',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            },
+            success: {
+              iconTheme: {
+                primary: '#22C55E',
+                secondary: '#ffffff',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#EF4444',
+                secondary: '#ffffff',
+              },
+            },
+          }}
+        />
       </div>
     </Router>
   );
