@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
+import { FcGoogle } from 'react-icons/fc';
+import { FaLinkedinIn } from 'react-icons/fa';
 
 const Auth = ({ mode = 'login', onClose }) => {
   const [activeTab, setActiveTab] = useState(mode);
@@ -21,37 +23,38 @@ const Auth = ({ mode = 'login', onClose }) => {
       return;
     }
 
-    // Simulate auth logic
-    console.log({
-      action: activeTab,
-      role,
-      ...formData,
-    });
-
     toast.success(
       activeTab === 'login'
         ? '✅ Logged in successfully!'
         : '🎉 Account created successfully!'
     );
 
-    if (onClose) onClose(); // close the modal after success
+    if (onClose) onClose();
+  };
+
+  const handleSocialLogin = (provider) => {
+    toast(`🔐 ${provider} login not connected yet.`);
   };
 
   return (
     <div className="w-full">
       {/* Tabs */}
-      <div className="flex mb-4 border-b border-gray-200">
+      <div className="flex mb-6 bg-[#f0f4f6] rounded-lg overflow-hidden">
         <button
-          className={`flex-1 py-2 text-center font-medium ${
-            activeTab === 'login' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'
+          className={`flex-1 py-3 text-center text-sm font-medium transition ${
+            activeTab === 'login'
+              ? 'bg-[#003B4C] text-white'
+              : 'text-gray-500 hover:bg-gray-100'
           }`}
           onClick={() => setActiveTab('login')}
         >
           Login
         </button>
         <button
-          className={`flex-1 py-2 text-center font-medium ${
-            activeTab === 'signup' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'
+          className={`flex-1 py-3 text-center text-sm font-medium transition ${
+            activeTab === 'signup'
+              ? 'bg-[#003B4C] text-white'
+              : 'text-gray-500 hover:bg-gray-100'
           }`}
           onClick={() => setActiveTab('signup')}
         >
@@ -61,12 +64,14 @@ const Auth = ({ mode = 'login', onClose }) => {
 
       {/* Headings */}
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">
+        <h2 className="text-2xl font-bold text-[#003B4C]">
           {activeTab === 'login' ? 'Welcome Back' : 'Create Account'}
         </h2>
-        <h3 className="text-sm text-gray-500">
-          {activeTab === 'login' ? 'Please sign in to continue' : 'Please sign up to continue'}
-        </h3>
+        <p className="text-sm text-gray-500">
+          {activeTab === 'login'
+            ? 'Login to access your dashboard'
+            : 'Sign up to get started'}
+        </p>
       </div>
 
       {/* Role Selector */}
@@ -75,7 +80,7 @@ const Auth = ({ mode = 'login', onClose }) => {
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#007C99] focus:outline-none"
         >
           <option value="tenant">Tenant</option>
           <option value="landlord">Landlord</option>
@@ -86,14 +91,14 @@ const Auth = ({ mode = 'login', onClose }) => {
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Email</label>
+          <label className="block text-sm font-medium text-gray-700">Email Address</label>
           <input
             type="email"
             name="email"
             required
             value={formData.email}
             onChange={handleChange}
-            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#007C99] focus:outline-none"
           />
         </div>
 
@@ -105,7 +110,7 @@ const Auth = ({ mode = 'login', onClose }) => {
             required
             value={formData.password}
             onChange={handleChange}
-            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#007C99] focus:outline-none"
           />
         </div>
 
@@ -118,23 +123,52 @@ const Auth = ({ mode = 'login', onClose }) => {
               required
               value={formData.confirmPassword}
               onChange={handleChange}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#007C99] focus:outline-none"
             />
           </div>
         )}
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+          className="w-full bg-[#003B4C] text-white py-2 rounded-md hover:bg-[#005A6E] transition"
         >
           {activeTab === 'login' ? 'Login' : 'Sign Up'}
         </button>
       </form>
 
-      {/* Optional Close Button at bottom for smaller screens */}
+      {/* Divider */}
+      <div className="flex items-center gap-4 my-6">
+        <hr className="flex-1 border-gray-300" />
+        <span className="text-xs text-gray-500">or continue with</span>
+        <hr className="flex-1 border-gray-300" />
+      </div>
+
+      {/* Social Login Buttons */}
+      <div className="space-y-3">
+        <button
+          onClick={() => handleSocialLogin('Google')}
+          className="flex items-center justify-center w-full px-4 py-2 border border-gray-300 text-sm rounded-md bg-[#0077B5] text-white hover:opacity-90 transition"
+        >
+          <FcGoogle className="mr-2 text-xl" />
+          Continue with Google
+        </button>
+
+        <button
+          onClick={() => handleSocialLogin('LinkedIn')}
+          className="flex items-center justify-center w-full px-4 py-2 border border-gray-300 text-sm rounded-md bg-[#0077B5] text-white hover:opacity-90 transition"
+        >
+          <FaLinkedinIn className="mr-2 text-xl" />
+          Continue with LinkedIn
+        </button>
+      </div>
+
+      {/* Cancel */}
       {onClose && (
-        <div className="mt-4 text-center">
-          <button onClick={onClose} className="text-sm text-gray-500 hover:text-red-500">
+        <div className="mt-6 text-center">
+          <button
+            onClick={onClose}
+            className="text-sm text-gray-400 hover:text-red-500"
+          >
             Cancel
           </button>
         </div>

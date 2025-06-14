@@ -4,26 +4,49 @@ import BookingStatus from '../components/BookingStatus';
 import RentalHistory from '../components/RentalHistory';
 import Services from '../components/Services';
 import TenantProfile from '../components/TenantProfile';
-import {
-  Home,
-  CalendarCheck,
-  ClipboardList,
-  Wrench,
-  User,
-} from 'lucide-react';
+import { Home, CalendarCheck, ClipboardList, Wrench, User } from 'lucide-react';
 
 const TenantDashboard = () => {
   const [activeTab, setActiveTab] = useState('property');
-  const [bookings, setBookings] = useState([]); // 🔁 Shared bookings state
+  const [bookings, setBookings] = useState([]);
+  const [rentalHistory, setRentalHistory] = useState([
+    {
+      id: 1,
+      property: '2 Bedroom Apartment, Nairobi',
+      from: '2024-02-01',
+      to: '2025-01-31',
+      amount: 540000,
+      status: 'Completed',
+    },
+    {
+      id: 2,
+      property: '1 Bedroom Studio, Kilimani',
+      from: '2023-01-01',
+      to: '2023-12-31',
+      amount: 360000,
+      status: 'Completed',
+    },
+  ]);
 
   const handleBookProperty = (property) => {
-    const newBooking = {
+    const today = new Date().toISOString().split('T')[0];
+    const rental = {
       id: Date.now(),
       property: `${property.name}, ${property.location}`,
-      date: new Date().toISOString().split('T')[0], // today
+      from: today,
+      to: '2025-12-31',
+      amount: property.price * 12,
+      status: 'Ongoing',
+    };
+    const booking = {
+      id: Date.now(),
+      property: `${property.name}, ${property.location}`,
+      date: today,
       status: 'Pending',
     };
-    setBookings(prev => [newBooking, ...prev]);
+
+    setBookings(prev => [booking, ...prev]);
+    setRentalHistory(prev => [rental, ...prev]);
   };
 
   const renderContent = () => {
@@ -35,7 +58,7 @@ const TenantDashboard = () => {
       case 'booking':
         return <BookingStatus bookings={bookings} setBookings={setBookings} />;
       case 'rental':
-        return <RentalHistory />;
+        return <RentalHistory rentals={rentalHistory} />;
       case 'services':
         return <Services />;
       default:
@@ -53,6 +76,7 @@ const TenantDashboard = () => {
 
   return (
     <div className="min-h-screen flex bg-gray-50">
+      {/* Sidebar */}
       <aside className="hidden md:flex flex-col w-64 bg-[#003B4C] text-white sticky top-0 h-screen overflow-y-auto z-30">
         <div className="px-6 py-5 border-b border-[#005A6E]">
           <h1 className="text-xl font-bold">Tenant Dashboard</h1>
@@ -90,6 +114,7 @@ const TenantDashboard = () => {
         </select>
       </div>
 
+      {/* Main Content */}
       <main className="flex-1 p-6 overflow-y-auto">{renderContent()}</main>
     </div>
   );
