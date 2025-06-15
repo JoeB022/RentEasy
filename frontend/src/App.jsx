@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 import Auth from './components/Auth';
 
 import TenantDashboard from './pages/TenantDashboard';
+import LandlordDashboard from './pages/LandlordDashboard';
 
 function App() {
   const [showAuth, setShowAuth] = useState(false);
@@ -42,6 +43,7 @@ function App() {
               }
             />
             <Route path="/dashboard/tenant" element={<TenantDashboard />} />
+            <Route path="/dashboard/landlord" element={<LandlordDashboard />} />
           </Routes>
         </main>
 
