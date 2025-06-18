@@ -10,6 +10,7 @@ import Auth from './components/Auth';
 
 import TenantDashboard from './pages/TenantDashboard';
 import LandlordDashboard from './pages/LandlordDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   const [showAuth, setShowAuth] = useState(false);
@@ -44,6 +45,7 @@ function App() {
             />
             <Route path="/dashboard/tenant" element={<TenantDashboard />} />
             <Route path="/dashboard/landlord" element={<LandlordDashboard />} />
+            <Route path="/dashboard/admin" element={<AdminDashboard />} />
           </Routes>
         </main>
 

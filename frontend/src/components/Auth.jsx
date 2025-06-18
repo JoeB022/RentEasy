@@ -2,7 +2,62 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { FcGoogle } from 'react-icons/fc';
 import { FaLinkedinIn } from 'react-icons/fa';
+import { Navigate } from 'react-router-dom';
 
+// 🔐 Login API call
+const login = async (email, password) => {
+  try {
+    const res = await fetch('http://localhost:8000/api/token/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: email, password }),
+    });
+
+    if (!res.ok) throw new Error('Invalid credentials');
+
+    const data = await res.json();
+    localStorage.setItem('token', data.access);
+    localStorage.setItem('role', data.role);
+    localStorage.setItem('username', data.username);
+
+    // 🔐 Token-based secure GET request after login
+    const token = data.access;
+    const secureRes = await fetch('http://localhost:8000/api/your-endpoint/', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!secureRes.ok) {
+      toast.error('⚠️ Token is invalid or expired.');
+    } else {
+      const responseData = await secureRes.json();
+      console.log('Secure data:', responseData);
+    }
+
+    return data;
+  } catch (error) {
+    toast.error('❌ Login failed: ' + error.message);
+    throw error;
+  }
+};
+
+// 🔓 Logout function
+export const logout = () => {
+  localStorage.clear();
+  toast.success('👋 Logged out');
+  window.location.href = '/';
+};
+
+// 🛡️ Route protection
+export const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  return token ? children : <Navigate to="/login" replace />;
+};
+
+// 🧠 Auth Component
 const Auth = ({ mode = 'login', onClose }) => {
   const [activeTab, setActiveTab] = useState(mode);
   const [role, setRole] = useState('tenant');
@@ -13,23 +68,35 @@ const Auth = ({ mode = 'login', onClose }) => {
   });
 
   const handleChange = (e) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (activeTab === 'signup' && formData.password !== formData.confirmPassword) {
       toast.error('❌ Passwords do not match!');
       return;
     }
 
-    toast.success(
-      activeTab === 'login'
-        ? '✅ Logged in successfully!'
-        : '🎉 Account created successfully!'
-    );
+    if (activeTab === 'login') {
+      try {
+        const res = await login(formData.email, formData.password);
+        toast.success('✅ Logged in successfully!');
+        if (onClose) onClose();
 
-    if (onClose) onClose();
+        const userRole = res.role;
+        if (userRole === 'tenant') window.location.href = '/dashboard/tenant';
+        else if (userRole === 'landlord') window.location.href = '/dashboard/landlord';
+        else if (userRole === 'admin') window.location.href = '/dashboard/admin';
+        else window.location.href = '/dashboard';
+      } catch (err) {
+        // Error handled by toast
+      }
+    } else {
+      toast.success('🎉 Account created successfully! (SignUp not connected)');
+      if (onClose) onClose();
+    }
   };
 
   const handleSocialLogin = (provider) => {
@@ -62,7 +129,7 @@ const Auth = ({ mode = 'login', onClose }) => {
         </button>
       </div>
 
-      {/* Headings */}
+      {/* Heading */}
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-[#003B4C]">
           {activeTab === 'login' ? 'Welcome Back' : 'Create Account'}
@@ -143,11 +210,11 @@ const Auth = ({ mode = 'login', onClose }) => {
         <hr className="flex-1 border-gray-300" />
       </div>
 
-      {/* Social Login Buttons */}
+      {/* Social Login */}
       <div className="space-y-3">
         <button
           onClick={() => handleSocialLogin('Google')}
-          className="flex items-center justify-center w-full px-4 py-2 border border-gray-300 text-sm rounded-md bg-[#0077B5] text-white hover:opacity-90 transition"
+          className="flex items-center justify-center w-full px-4 py-2 border border-gray-300 text-sm rounded-md bg-white hover:bg-gray-50 transition"
         >
           <FcGoogle className="mr-2 text-xl" />
           Continue with Google

@@ -4,61 +4,83 @@ import {
   Users,
   CreditCard,
   Wrench,
-  UserCircle
+  UserCircle,
 } from 'lucide-react';
-import PropertyManager from '../components/PropertyManager'; // ✅ Make sure path is correct
+
+import PropertyManager from '../components/PropertyManager';
+import TenantsByHouse from '../components/TenantsByHouse';
+import RealTimePayments from '../components/RealTimePayment2';
+import ApartmentServiceAddons from '../components/ApartmentServiceAddons';
+import LandlordProfile from '../components/LandlordProfile';
 
 const LandlordDashboard = () => {
   const [activeTab, setActiveTab] = useState('properties');
 
   const tabs = [
-    { label: 'Properties', value: 'properties', icon: <Building size={16} /> },
-    { label: 'Tenants', value: 'tenants', icon: <Users size={16} /> },
-    { label: 'Payments', value: 'payments', icon: <CreditCard size={16} /> },
-    { label: 'Services', value: 'services', icon: <Wrench size={16} /> },
-    { label: 'Profile', value: 'profile', icon: <UserCircle size={16} /> }
+    { label: 'Properties', value: 'properties', icon: Building },
+    { label: 'Tenants', value: 'tenants', icon: Users },
+    { label: 'Payments', value: 'payments', icon: CreditCard },
+    { label: 'Services', value: 'services', icon: Wrench },
+    { label: 'Profile', value: 'profile', icon: UserCircle },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
       case 'properties':
-        return <PropertyManager />; // ✅ Actual component used
+        return <PropertyManager />;
       case 'tenants':
-        return <div>Tenants by House/Room Placeholder</div>;
+        return <TenantsByHouse />;
       case 'payments':
-        return <div>Real-Time Rent Payment Status Placeholder</div>;
+        return <RealTimePayments />;
       case 'services':
-        return <div>Service Add-ons Management Placeholder</div>;
+        return <ApartmentServiceAddons />;
       case 'profile':
-        return <div>Landlord Profile Management Placeholder</div>;
+        return <LandlordProfile />;
       default:
         return null;
     }
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
-      {/* Sidebar */}
-      <aside className="w-64 bg-[#003B4C] text-white h-screen p-6">
-        <h2 className="text-xl font-bold mb-6">Landlord Dashboard</h2>
-        {tabs.map(tab => (
-          <button
-            key={tab.value}
-            onClick={() => setActiveTab(tab.value)}
-            className={`flex items-center gap-2 px-4 py-2 w-full text-left rounded-md text-sm mb-2 transition ${
-              activeTab === tab.value
-                ? 'bg-[#007C99] text-white'
-                : 'hover:bg-[#004958]'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </aside>
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      {/* Header */}
+      <header className="bg-[#003B4C] text-white px-6 py-4 shadow flex justify-between items-center">
+        <h1 className="text-xl font-bold">Landlord Dashboard</h1>
+        <div className="text-sm opacity-90">Welcome, Landlord</div>
+      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 p-6 overflow-y-auto">{renderContent()}</main>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-64 bg-[#003B4C] text-white hidden md:flex flex-col px-4 py-6 space-y-3 shadow-sm">
+          <h2 className="text-lg font-semibold text-white mb-4">Landlord Dashboard</h2>
+          {tabs.map(({ label, value, icon: Icon }) => (
+            <button
+              key={value}
+              onClick={() => setActiveTab(value)}
+              className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm transition font-medium ${
+                activeTab === value
+                  ? 'bg-white text-[#003B4C]'
+                  : 'text-white hover:bg-[#005A6E]'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Icon size={18} />
+                {label}
+              </div>
+            </button>
+          ))}
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 p-6 overflow-y-auto bg-gray-50">
+          <div className="bg-white rounded-xl shadow p-6 border border-gray-200">
+            <h2 className="text-xl font-bold text-[#003B4C] mb-2 capitalize">
+              {activeTab}
+            </h2>
+            {renderContent()}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

@@ -67,55 +67,68 @@ const TenantDashboard = () => {
   };
 
   const tabs = [
-    { label: 'My Profile', value: 'profile', icon: <User size={16} /> },
-    { label: 'Property Listings', value: 'property', icon: <Home size={16} /> },
-    { label: 'Booking Status', value: 'booking', icon: <CalendarCheck size={16} /> },
-    { label: 'Rental History', value: 'rental', icon: <ClipboardList size={16} /> },
-    { label: 'Services', value: 'services', icon: <Wrench size={16} /> },
+    { label: 'My Profile', value: 'profile', icon: User },
+    { label: 'Property Listings', value: 'property', icon: Home },
+    { label: 'Booking Status', value: 'booking', icon: CalendarCheck },
+    { label: 'Rental History', value: 'rental', icon: ClipboardList },
+    { label: 'Services', value: 'services', icon: Wrench },
   ];
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
-      {/* Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-[#003B4C] text-white sticky top-0 h-screen overflow-y-auto z-30">
-        <div className="px-6 py-5 border-b border-[#005A6E]">
-          <h1 className="text-xl font-bold">Tenant Dashboard</h1>
-        </div>
-        <nav className="flex-1 px-4 py-4 space-y-2">
-          {tabs.map((tab) => (
+    <div className="min-h-screen flex flex-col bg-gray-100">
+      {/* Header */}
+      <header className="bg-[#003B4C] text-white px-6 py-4 shadow flex justify-between items-center">
+        <h1 className="text-xl font-bold">Tenant Dashboard</h1>
+        <div className="text-sm opacity-90">Welcome, Tenant</div>
+      </header>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <aside className="hidden md:flex flex-col w-64 bg-[#003B4C] text-white px-4 py-6 space-y-3 shadow-sm">
+          <h2 className="text-lg font-semibold text-white mb-4">Tenant Dashboard</h2>
+          {tabs.map(({ label, value, icon: Icon }) => (
             <button
-              key={tab.value}
-              onClick={() => setActiveTab(tab.value)}
-              className={`flex items-center gap-3 w-full text-left px-4 py-2 rounded-md text-sm transition-colors duration-200 ${
-                activeTab === tab.value
-                  ? 'bg-[#007C99] text-white'
-                  : 'text-[#00A1B3] hover:bg-[#DFF6FA]'
+              key={value}
+              onClick={() => setActiveTab(value)}
+              className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm transition font-medium ${
+                activeTab === value
+                  ? 'bg-white text-[#003B4C]'
+                  : 'text-white hover:bg-white hover:text-[#003B4C]'
               }`}
             >
-              {tab.icon}
-              {tab.label}
+              <div className="flex items-center gap-2">
+                <Icon size={18} />
+                {label}
+              </div>
             </button>
           ))}
-        </nav>
-      </aside>
+        </aside>
 
-      {/* Mobile Dropdown */}
-      <div className="md:hidden w-full bg-white shadow sticky top-0 z-20 px-4 py-3 border-b border-gray-200">
-        <select
-          onChange={(e) => setActiveTab(e.target.value)}
-          value={activeTab}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm"
-        >
-          {tabs.map((tab) => (
-            <option key={tab.value} value={tab.value}>
-              {tab.label}
-            </option>
-          ))}
-        </select>
+        {/* Mobile Dropdown */}
+        <div className="md:hidden w-full bg-white shadow sticky top-0 z-20 px-4 py-3 border-b border-gray-200">
+          <select
+            onChange={(e) => setActiveTab(e.target.value)}
+            value={activeTab}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm"
+          >
+            {tabs.map((tab) => (
+              <option key={tab.value} value={tab.value}>
+                {tab.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Main Content */}
+        <main className="flex-1 p-6 overflow-y-auto bg-gray-50">
+          <div className="bg-white rounded-xl shadow p-6 border border-gray-200">
+            <h2 className="text-xl font-bold text-[#003B4C] mb-2 capitalize">
+              {activeTab.replace('-', ' ')}
+            </h2>
+            {renderContent()}
+          </div>
+        </main>
       </div>
-
-      {/* Main Content */}
-      <main className="flex-1 p-6 overflow-y-auto">{renderContent()}</main>
     </div>
   );
 };
