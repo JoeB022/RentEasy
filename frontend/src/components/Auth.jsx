@@ -1,13 +1,50 @@
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
 import toast from 'react-hot-toast';
 import { FcGoogle } from 'react-icons/fc';
 import { FaLinkedinIn } from 'react-icons/fa';
 import { Navigate } from 'react-router-dom';
+import { TextInput, SubmitButton } from './forms';
+import { setToken, clearToken, isAuthenticated } from '../utils/auth';
+import { Button, Typography } from './ui';
+
+// Validation schemas
+const loginSchema = yup.object({
+  email: yup
+    .string()
+    .required('Email is required')
+    .email('Please enter a valid email address'),
+  password: yup
+    .string()
+    .required('Password is required')
+    .min(6, 'Password must be at least 6 characters'),
+});
+
+const signupSchema = yup.object({
+  email: yup
+    .string()
+    .required('Email is required')
+    .email('Please enter a valid email address'),
+  password: yup
+    .string()
+    .required('Password is required')
+    .min(6, 'Password must be at least 6 characters')
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+    ),
+  confirmPassword: yup
+    .string()
+    .required('Please confirm your password')
+    .oneOf([yup.ref('password')], 'Passwords must match'),
+});
 
 // 🔐 Login API call
 const login = async (email, password) => {
   try {
-    const res = await fetch('http://localhost:8000/api/token/', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/token/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: email, password }),
@@ -16,13 +53,13 @@ const login = async (email, password) => {
     if (!res.ok) throw new Error('Invalid credentials');
 
     const data = await res.json();
-    localStorage.setItem('token', data.access);
-    localStorage.setItem('role', data.role);
-    localStorage.setItem('username', data.username);
+    
+    // Store both access and refresh tokens using the new auth utility
+    setToken(data.access, data.refresh || 'mock_refresh_token', data.role, data.username);
 
     // 🔐 Token-based secure GET request after login
     const token = data.access;
-    const secureRes = await fetch('http://localhost:8000/api/your-endpoint/', {
+    const secureRes = await fetch(`${import.meta.env.VITE_API_URL}/your-endpoint/`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -46,42 +83,52 @@ const login = async (email, password) => {
 
 // 🔓 Logout function
 export const logout = () => {
-  localStorage.clear();
+  clearToken();
   toast.success('👋 Logged out');
   window.location.href = '/';
 };
 
 // 🛡️ Route protection
 export const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" replace />;
+  const isAuth = isAuthenticated();
+  return isAuth ? children : <Navigate to="/login" replace />;
 };
 
 // 🧠 Auth Component
 const Auth = ({ mode = 'login', onClose }) => {
   const [activeTab, setActiveTab] = useState(mode);
   const [role, setRole] = useState('tenant');
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form hooks for login and signup
+  const loginForm = useForm({
+    resolver: yupResolver(loginSchema),
+    mode: 'onChange',
   });
 
-  const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const signupForm = useForm({
+    resolver: yupResolver(signupSchema),
+    mode: 'onChange',
+  });
+
+  const currentForm = activeTab === 'login' ? loginForm : signupForm;
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    // Reset form errors when switching tabs
+    if (tab === 'login') {
+      loginForm.clearErrors();
+    } else {
+      signupForm.clearErrors();
+    }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (activeTab === 'signup' && formData.password !== formData.confirmPassword) {
-      toast.error('❌ Passwords do not match!');
-      return;
-    }
-
-    if (activeTab === 'login') {
-      try {
-        const res = await login(formData.email, formData.password);
+  const onSubmit = async (data) => {
+    setIsSubmitting(true);
+    
+    try {
+      if (activeTab === 'login') {
+        const res = await login(data.email, data.password);
         toast.success('✅ Logged in successfully!');
         if (onClose) onClose();
 
@@ -90,12 +137,14 @@ const Auth = ({ mode = 'login', onClose }) => {
         else if (userRole === 'landlord') window.location.href = '/dashboard/landlord';
         else if (userRole === 'admin') window.location.href = '/dashboard/admin';
         else window.location.href = '/dashboard';
-      } catch (err) {
-        // Error handled by toast
+      } else {
+        toast.success('🎉 Account created successfully! (SignUp not connected)');
+        if (onClose) onClose();
       }
-    } else {
-      toast.success('🎉 Account created successfully! (SignUp not connected)');
-      if (onClose) onClose();
+    } catch (err) {
+      // Error handled by toast
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -113,7 +162,7 @@ const Auth = ({ mode = 'login', onClose }) => {
               ? 'bg-[#003B4C] text-white'
               : 'text-gray-500 hover:bg-gray-100'
           }`}
-          onClick={() => setActiveTab('login')}
+          onClick={() => handleTabChange('login')}
         >
           Login
         </button>
@@ -123,7 +172,7 @@ const Auth = ({ mode = 'login', onClose }) => {
               ? 'bg-[#003B4C] text-white'
               : 'text-gray-500 hover:bg-gray-100'
           }`}
-          onClick={() => setActiveTab('signup')}
+          onClick={() => handleTabChange('signup')}
         >
           Sign Up
         </button>
@@ -131,19 +180,19 @@ const Auth = ({ mode = 'login', onClose }) => {
 
       {/* Heading */}
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-[#003B4C]">
+        <Typography.Heading level={2} className="text-primary-500 mb-2">
           {activeTab === 'login' ? 'Welcome Back' : 'Create Account'}
-        </h2>
-        <p className="text-sm text-gray-500">
+        </Typography.Heading>
+        <Typography.BodyText variant="muted" size="sm">
           {activeTab === 'login'
             ? 'Login to access your dashboard'
             : 'Sign up to get started'}
-        </p>
+        </Typography.BodyText>
       </div>
 
       {/* Role Selector */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Select Role</label>
+        <Typography.Label className="mb-1">Select Role</Typography.Label>
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
@@ -156,51 +205,48 @@ const Auth = ({ mode = 'login', onClose }) => {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Email Address</label>
-          <input
-            type="email"
-            name="email"
-            required
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#007C99] focus:outline-none"
-          />
-        </div>
+      <form onSubmit={currentForm.handleSubmit(onSubmit)} className="space-y-4">
+        <TextInput
+          label="Email Address"
+          name="email"
+          type="email"
+          placeholder="Enter your email"
+          required
+          error={currentForm.formState.errors.email?.message}
+          {...currentForm.register('email')}
+        />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Password</label>
-          <input
-            type="password"
-            name="password"
-            required
-            value={formData.password}
-            onChange={handleChange}
-            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#007C99] focus:outline-none"
-          />
-        </div>
+        <TextInput
+          label="Password"
+          name="password"
+          type="password"
+          placeholder="Enter your password"
+          required
+          error={currentForm.formState.errors.password?.message}
+          {...currentForm.register('password')}
+        />
 
         {activeTab === 'signup' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
-            <input
-              type="password"
-              name="confirmPassword"
-              required
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#007C99] focus:outline-none"
-            />
-          </div>
+          <TextInput
+            label="Confirm Password"
+            name="confirmPassword"
+            type="password"
+            placeholder="Confirm your password"
+            required
+            error={currentForm.formState.errors.confirmPassword?.message}
+            {...currentForm.register('confirmPassword')}
+          />
         )}
 
-        <button
-          type="submit"
-          className="w-full bg-[#003B4C] text-white py-2 rounded-md hover:bg-[#005A6E] transition"
-        >
-          {activeTab === 'login' ? 'Login' : 'Sign Up'}
-        </button>
+                          <SubmitButton
+                    type="submit"
+                    loading={isSubmitting}
+                    disabled={isSubmitting}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {activeTab === 'login' ? 'Login' : 'Sign Up'}
+                  </SubmitButton>
       </form>
 
       {/* Divider */}
@@ -212,32 +258,37 @@ const Auth = ({ mode = 'login', onClose }) => {
 
       {/* Social Login */}
       <div className="space-y-3">
-        <button
+        <Button
+          variant="outline"
+          fullWidth
           onClick={() => handleSocialLogin('Google')}
-          className="flex items-center justify-center w-full px-4 py-2 border border-gray-300 text-sm rounded-md bg-white hover:bg-gray-50 transition"
         >
           <FcGoogle className="mr-2 text-xl" />
           Continue with Google
-        </button>
+        </Button>
 
-        <button
+        <Button
+          variant="outline"
+          fullWidth
           onClick={() => handleSocialLogin('LinkedIn')}
-          className="flex items-center justify-center w-full px-4 py-2 border border-gray-300 text-sm rounded-md bg-[#0077B5] text-white hover:opacity-90 transition"
+          className="bg-[#0077B5] text-white border-[#0077B5] hover:bg-[#0077B5] hover:opacity-90"
         >
           <FaLinkedinIn className="mr-2 text-xl" />
           Continue with LinkedIn
-        </button>
+        </Button>
       </div>
 
       {/* Cancel */}
       {onClose && (
         <div className="mt-6 text-center">
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onClose}
-            className="text-sm text-gray-400 hover:text-red-500"
+            className="text-gray-400 hover:text-error-500"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       )}
     </div>

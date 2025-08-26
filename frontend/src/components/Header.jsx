@@ -1,5 +1,6 @@
 import React from 'react';
-import logo from '../assets/logo3.jpg'; // 🖼️ Replace with your actual logo path
+import logo from '../assets/logo3.jpg';
+import { Button, Typography } from './ui';
 
 const Header = ({ onAuthOpen }) => {
   return (
@@ -9,7 +10,9 @@ const Header = ({ onAuthOpen }) => {
           {/* Logo + Title */}
           <div className="flex items-center space-x-3">
             <img src={logo} alt="RentEasy Logo" className="h-8 w-8 object-contain" />
-            <span className="text-xl font-bold tracking-wide">RentEasy</span>
+            <Typography.Heading level={4} className="text-white tracking-wide">
+              RentEasy
+            </Typography.Heading>
           </div>
 
           {/* Desktop Navigation */}
@@ -33,18 +36,21 @@ const Header = ({ onAuthOpen }) => {
 
           {/* CTA / Auth */}
           <div className="hidden md:flex space-x-4">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => onAuthOpen('login')}
-              className="text-sm px-4 py-2 transition-all duration-200 hover:bg-[#007C99] hover:text-white rounded-md"
+              className="text-white hover:bg-primary-600 hover:text-white"
             >
               Login
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
               onClick={() => onAuthOpen('signup')}
-              className="bg-[#007C99] text-white text-sm px-4 py-2 rounded-md hover:bg-[#00A1B3] transition"
             >
               Sign Up
-            </button>
+            </Button>
           </div>
 
           {/* Mobile Menu Icon */}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
@@ -7,10 +7,17 @@ import Hero from './components/Hero';
 import FeatureHighlights from './components/FeatureHighlights';
 import Footer from './components/Footer';
 import Auth from './components/Auth';
+import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
+import Loader from './components/Loader';
 
-import TenantDashboard from './pages/TenantDashboard';
-import LandlordDashboard from './pages/LandlordDashboard';
-import AdminDashboard from './pages/AdminDashboard';
+// Lazy load dashboard pages for code splitting
+const TenantDashboard = lazy(() => import('./pages/TenantDashboard'));
+const LandlordDashboard = lazy(() => import('./pages/LandlordDashboard'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const Unauthorized = lazy(() => import('./pages/Unauthorized'));
+
+
 
 function App() {
   const [showAuth, setShowAuth] = useState(false);
@@ -33,20 +40,55 @@ function App() {
 
         {/* Main Content */}
         <main className="flex-grow">
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <>
-                  <Hero />
-                  <FeatureHighlights />
-                </>
-              }
-            />
-            <Route path="/dashboard/tenant" element={<TenantDashboard />} />
-            <Route path="/dashboard/landlord" element={<LandlordDashboard />} />
-            <Route path="/dashboard/admin" element={<AdminDashboard />} />
-          </Routes>
+          <ErrorBoundary>
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <div className="text-center">
+                  <Loader size="xl" />
+                  <p className="mt-4 text-gray-600 text-lg font-medium">
+                    Loading RentEasy...
+                  </p>
+                </div>
+              </div>
+            }>
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <>
+                      <Hero />
+                      <FeatureHighlights />
+                    </>
+                  }
+                />
+                <Route path="/unauthorized" element={<Unauthorized />} />
+                <Route 
+                  path="/dashboard/tenant" 
+                  element={
+                    <ProtectedRoute allowedRoles={["tenant"]}>
+                      <TenantDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/dashboard/landlord" 
+                  element={
+                    <ProtectedRoute allowedRoles={["landlord"]}>
+                      <LandlordDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/dashboard/admin" 
+                  element={
+                    <ProtectedRoute allowedRoles={["admin"]}>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
         </main>
 
         {/* Footer */}

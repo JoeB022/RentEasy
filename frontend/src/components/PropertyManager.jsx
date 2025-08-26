@@ -12,6 +12,8 @@ import {
   Building2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { ALL_PROPERTY_TYPES } from '../utils/propertyTypes';
+import PropertyMap from './PropertyMap';
 
 const PropertyManager = () => {
   const [listings, setListings] = useState([]);
@@ -19,6 +21,8 @@ const PropertyManager = () => {
     id: null,
     name: '',
     location: '',
+    latitude: '',
+    longitude: '',
     price: '',
     bedrooms: '',
     units: '',
@@ -51,6 +55,15 @@ const PropertyManager = () => {
     );
   };
 
+  const handleLocationChange = (lat, lng, locationName = '') => {
+    setFormData(prev => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+      location: locationName || prev.location
+    }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const { name, location, price, bedrooms } = formData;
@@ -67,7 +80,10 @@ const PropertyManager = () => {
       toast.success('Property updated');
     } else {
       setListings([...listings, { ...formData, id: Date.now() }]);
-      toast.success('Property added');
+      const locationInfo = formData.latitude && formData.longitude 
+        ? ` with coordinates (${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)})`
+        : '';
+      toast.success(`Property added${locationInfo}`);
     }
 
     resetForm();
@@ -89,6 +105,8 @@ const PropertyManager = () => {
       id: null,
       name: '',
       location: '',
+      latitude: '',
+      longitude: '',
       price: '',
       bedrooms: '',
       units: '',
@@ -177,6 +195,14 @@ const PropertyManager = () => {
             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
             className="border rounded px-3 py-2"
           />
+          <div className="col-span-2">
+            <PropertyMap
+              latitude={formData.latitude}
+              longitude={formData.longitude}
+              onLocationChange={handleLocationChange}
+              locationName={formData.location}
+            />
+          </div>
           <input
             type="number"
             placeholder="Price (Ksh/month)"
@@ -204,10 +230,11 @@ const PropertyManager = () => {
             className="border rounded px-3 py-2"
           >
             <option value="">Select Category</option>
-            <option value="Apartment">Apartment</option>
-            <option value="Bedsitter">Bedsitter</option>
-            <option value="Bungalow">Bungalow</option>
-            <option value="Maisonette">Maisonette</option>
+            {ALL_PROPERTY_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
           </select>
           <input
             type="text"
@@ -269,11 +296,18 @@ const PropertyManager = () => {
                 </div>
 
                 <div className="px-4 py-3 space-y-2">
-                  {property.category && (
-                    <span className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full">
-                      {property.category}
-                    </span>
-                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {property.category && (
+                      <span className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full">
+                        {property.category}
+                      </span>
+                    )}
+                    {property.latitude && property.longitude && (
+                      <span className="inline-block bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
+                        📍 Located
+                      </span>
+                    )}
+                  </div>
 
                   {property.images.length > 0 && (
                     <div className="flex flex-wrap gap-2">

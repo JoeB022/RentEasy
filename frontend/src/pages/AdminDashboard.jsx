@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   UserCog,
@@ -8,6 +8,8 @@ import {
   Mail,
   ClipboardList,
   Home,
+  Menu,
+  X,
 } from 'lucide-react';
 
 import ListingApprovals from '../components/ListApprovals';
@@ -29,10 +31,35 @@ const initialEntries = [
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState('Listings');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [entries, setEntries] = useState(initialEntries);
 
   const unreadFeedback = entries.filter(e => e.type === 'feedback' && !e.read).length;
   const unreadLogs = entries.filter(e => e.type === 'log' && !e.read).length;
+
+  // Sidebar toggle functions
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const closeSidebar = () => setSidebarOpen(false);
+
+  // Handle section change and close sidebar on mobile
+  const handleSectionChange = (sectionName) => {
+    setActiveSection(sectionName);
+    if (window.innerWidth < 768) { // md breakpoint
+      closeSidebar();
+    }
+  };
+
+  // Keyboard event handling for accessibility
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && sidebarOpen) {
+        closeSidebar();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [sidebarOpen]);
 
   const adminSections = [
     { name: 'Listings', icon: Home },
@@ -52,26 +79,40 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Header */}
-      <header className="bg-[#003B4C] text-white px-6 py-4 shadow flex justify-between items-center">
-        <h1 className="text-xl font-bold">Admin Dashboard</h1>
-        <div className="text-sm opacity-90">Welcome, Admin</div>
-      </header>
+    <div className="min-h-screen flex bg-gray-100">
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={closeSidebar}
+        />
+      )}
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-64 bg-[#003B4C] text-white hidden md:flex flex-col px-4 py-6 space-y-3 shadow-sm">
-          <h2 className="text-lg font-semibold text-white mb-4">Admin Dashboard</h2>
+      {/* Mobile Sidebar */}
+      <aside className={`
+        fixed top-0 left-0 h-full w-64 bg-[#003B4C] text-white z-50 transform transition-transform duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:hidden
+      `}>
+        <div className="flex items-center justify-between p-4 border-b border-[#005A6E]">
+          <h2 className="text-lg font-semibold text-white">Menu</h2>
+          <button
+            onClick={closeSidebar}
+            className="p-2 hover:bg-[#005A6E] rounded-md transition-colors"
+          >
+            <X size={20} className="text-white" />
+          </button>
+        </div>
+        <div className="px-4 py-6 space-y-3">
           {adminSections.map(({ name, icon: Icon, badge }) => (
             <button
               key={name}
-              className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm transition font-medium ${
+              className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm transition font-medium w-full ${
                 activeSection === name
                   ? 'bg-white text-[#003B4C]'
                   : 'text-white hover:bg-[#005A6E]'
               }`}
-              onClick={() => setActiveSection(name)}
+              onClick={() => handleSectionChange(name)}
             >
               <div className="flex items-center gap-2">
                 <Icon size={18} />
@@ -84,10 +125,55 @@ const AdminDashboard = () => {
               )}
             </button>
           ))}
-        </aside>
+        </div>
+      </aside>
 
-        {/* Content */}
-        <main className="flex-1 p-6 overflow-y-auto bg-gray-50">
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex flex-col w-64 bg-[#003B4C] text-white fixed h-full z-30 shadow-lg">
+        <div className="px-4 py-6 space-y-3">
+          <h2 className="text-lg font-semibold text-white mb-4">Admin Dashboard</h2>
+          {adminSections.map(({ name, icon: Icon, badge }) => (
+            <button
+              key={name}
+              className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm transition font-medium ${
+                activeSection === name
+                  ? 'bg-white text-[#003B4C]'
+                  : 'text-white hover:bg-[#005A6E]'
+              }`}
+              onClick={() => handleSectionChange(name)}
+            >
+              <div className="flex items-center gap-2">
+                <Icon size={18} />
+                {name}
+              </div>
+              {badge && (
+                <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded-full">
+                  {badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 md:ml-64">
+        {/* Header */}
+        <header className="bg-[#003B4C] text-white px-6 py-4 shadow flex justify-between items-center">
+          {/* Mobile Menu Button */}
+          <button
+            onClick={toggleSidebar}
+            className="md:hidden p-2 hover:bg-[#005A6E] rounded-md transition-colors"
+          >
+            <Menu size={20} className="text-white" />
+          </button>
+          
+          <h1 className="text-xl font-bold">Admin Dashboard</h1>
+          <div className="text-sm opacity-90">Welcome, Admin</div>
+        </header>
+
+        {/* Scrollable Main Content */}
+        <main className="overflow-y-auto p-6 bg-gray-50 min-h-[calc(100vh-80px)]">
           <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
             <div className="bg-white rounded-xl shadow p-6 border border-gray-200">
               <h2 className="text-xl font-bold text-[#003B4C] mb-2">{activeSection}</h2>

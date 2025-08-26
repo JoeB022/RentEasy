@@ -1,11 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import toast from 'react-hot-toast';
-import { Transition } from '@headlessui/react';
+import SkeletonCard from './SkeletonCard';
+import PropertyCard from './PropertyCard';
+import Filters from './Filters';
+import { Typography } from './ui';
 
 const PropertyList = ({ onBook }) => {
-  const [filter, setFilter] = useState({ location: '', price: '' });
-  const [view, setView] = useState('all'); // all | available | occupied
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({
+    location: '',
+    priceRange: '',
+    propertyType: ''
+  });
   const [currentImageIndex, setCurrentImageIndex] = useState({}); // track per property
+  const [loading, setLoading] = useState(false); // New state for loading
 
   const properties = [
     {
@@ -13,6 +21,7 @@ const PropertyList = ({ onBook }) => {
       name: '2 Bedroom Apartment',
       location: 'Nairobi',
       price: 45000,
+      propertyType: 'Apartment',
       images: [
         'https://i.pinimg.com/736x/7e/33/2c/7e332c464daacb0ccf6b815a2ae48f52.jpg',
         'https://i.pinimg.com/736x/bf/dc/99/bfdc994f338254356bcffe0dba331043.jpg',
@@ -20,6 +29,7 @@ const PropertyList = ({ onBook }) => {
         'https://i.pinimg.com/736x/4d/74/91/4d749135ff9d06382ddab8be8df24ab9.jpg',
       ],
       available: true,
+      isNew: true,
       amenities: ['Wi-Fi', 'Parking', 'Balcony'],
     },
     {
@@ -27,6 +37,7 @@ const PropertyList = ({ onBook }) => {
       name: '1 Bedroom Studio',
       location: 'Kilimani',
       price: 30000,
+      propertyType: 'Studio',
       images: [
         'https://i.pinimg.com/736x/ce/c5/cf/cec5cf7a64b78eaa5c024dd28596120c.jpg',
         'https://i.pinimg.com/736x/d5/61/d3/d561d3aebc2d7db4098851c2c61f01ac.jpg',
@@ -41,6 +52,7 @@ const PropertyList = ({ onBook }) => {
       name: '3 Bedroom House',
       location: 'Westlands',
       price: 70000,
+      propertyType: 'House',
       images: [
         'https://i.pinimg.com/736x/f0/ac/91/f0ac91b9c88b7376d913a427ce749825.jpg',
         'https://i.pinimg.com/736x/d7/fa/14/d7fa14163f07e93d3e311b6a91b00d07.jpg',
@@ -48,6 +60,7 @@ const PropertyList = ({ onBook }) => {
         'https://i.pinimg.com/736x/bd/8a/36/bd8a365f185433b1623946d97e347ca7.jpg',
       ],
       available: true,
+      isFeatured: true,
       amenities: ['Wi-Fi', 'Garden', 'Garage'],
     },
     {
@@ -55,6 +68,7 @@ const PropertyList = ({ onBook }) => {
       name: '4 Bedroom Mansion',
       location: 'Ngong',
       price: 85000,
+      propertyType: 'Mansion',
       images: [
         'https://i.pinimg.com/736x/95/0d/f5/950df56507ba44d737bcbcc2a81819fe.jpg',
         'https://i.pinimg.com/736x/b8/8e/9e/b88e9e285fe604366acbccb49f65ad7c.jpg',
@@ -69,6 +83,7 @@ const PropertyList = ({ onBook }) => {
       name: '2 Bedroom Apartment',
       location: 'Kasarani',
       price: 60000,
+      propertyType: 'Apartment',
       images: [
         'https://i.pinimg.com/736x/64/3b/5f/643b5fbdcbf9decd41e743ba0f1ba60d.jpg',
         'https://i.pinimg.com/736x/d5/97/9e/d5979ef2d75d75079cd7098713db9c5e.jpg',
@@ -83,6 +98,7 @@ const PropertyList = ({ onBook }) => {
       name: '3 Bedroom Apartment',
       location: 'Rwaka',
       price: 64000,
+      propertyType: 'Apartment',
       images: [
         'https://i.pinimg.com/736x/ef/a9/c1/efa9c18ac521f877f4eae4bb2b6df21e.jpg',
         'https://i.pinimg.com/736x/6b/2a/84/6b2a84fa2987ed1f9be0feb9f3ff685c.jpg',
@@ -92,6 +108,47 @@ const PropertyList = ({ onBook }) => {
       available: true,
       amenities: ['Wi-Fi', 'Parking', 'Balcony'],
     },
+    // Commercial Properties
+    {
+      id: 7,
+      name: 'Modern Office Space',
+      location: 'Westlands',
+      price: 120000,
+      propertyType: 'Office Space',
+      images: [
+        'https://i.pinimg.com/736x/7e/33/2c/7e332c464daacb0ccf6b815a2ae48f52.jpg',
+        'https://i.pinimg.com/736x/bf/dc/99/bfdc994f338254356bcffe0dba331043.jpg',
+      ],
+      available: true,
+      isNew: true,
+      amenities: ['Wi-Fi', 'Parking', 'Security', 'Reception'],
+    },
+    {
+      id: 8,
+      name: 'Retail Shop Space',
+      location: 'Kilimani',
+      price: 85000,
+      propertyType: 'Shop',
+      images: [
+        'https://i.pinimg.com/736x/95/3f/a5/953fa5c3b7d08fd3056d75d59bdc6701.jpg',
+        'https://i.pinimg.com/736x/4d/74/91/4d749135ff9d06382ddab8be8df24ab9.jpg',
+      ],
+      available: true,
+      amenities: ['High Traffic', 'Parking', 'Storage', 'Security'],
+    },
+    {
+      id: 9,
+      name: 'Warehouse Facility',
+      location: 'Industrial Area',
+      price: 150000,
+      propertyType: 'Warehouse',
+      images: [
+        'https://i.pinimg.com/736x/64/3b/5f/643b5fbdcbf9decd41e743ba0f1ba60d.jpg',
+        'https://i.pinimg.com/736x/d5/97/9e/d5979ef2d75d75079cd7098713db9c5e.jpg',
+      ],
+      available: false,
+      amenities: ['Loading Dock', 'Security', '24/7 Access', 'Parking'],
+    },
   ];
 
   const handleExpressInterest = (property) => {
@@ -99,148 +156,165 @@ const PropertyList = ({ onBook }) => {
     if (onBook) onBook(property);
   };
 
-  const filtered = properties.filter((p) => {
-    const matchLocation = p.location.toLowerCase().includes(filter.location.toLowerCase());
-    const matchPrice = !filter.price || p.price <= parseInt(filter.price);
+  // Function to demonstrate loading state
+  const handleRefresh = async () => {
+    setLoading(true);
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setLoading(false);
+  };
 
-    if (view === 'available') return p.available && matchLocation && matchPrice;
-    if (view === 'occupied') return !p.available && matchLocation && matchPrice;
-    return matchLocation && matchPrice;
-  });
+  // Enhanced filtering logic
+  const filtered = useMemo(() => {
+    return properties.filter((property) => {
+      // Search query filter
+      const searchMatch = !searchQuery || 
+        property.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        property.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        property.amenities.some(amenity => 
+          amenity.toLowerCase().includes(searchQuery.toLowerCase())
+        );
 
-  const handleNext = (id, total) => {
-    setCurrentImageIndex((prev) => ({
+      // Location filter
+      const locationMatch = !filters.location || 
+        property.location === filters.location;
+
+      // Price range filter
+      const priceMatch = !filters.priceRange || (() => {
+        const price = property.price;
+        switch (filters.priceRange) {
+          case 'Under 30K': return price < 30000;
+          case '30K - 50K': return price >= 30000 && price <= 50000;
+          case '50K - 80K': return price > 50000 && price <= 80000;
+          case '80K - 120K': return price > 80000 && price <= 120000;
+          case 'Over 120K': return price > 120000;
+          default: return true;
+        }
+      })();
+
+      // Property type filter
+      const typeMatch = !filters.propertyType || 
+        property.propertyType === filters.propertyType;
+
+      return searchMatch && locationMatch && priceMatch && typeMatch;
+    });
+  }, [properties, searchQuery, filters]);
+
+  // Filter change handlers
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleFilterChange = (filterType, value) => {
+    setFilters(prev => ({
       ...prev,
-      [id]: prev[id] >= total - 1 ? 0 : (prev[id] || 0) + 1,
+      [filterType]: value
     }));
   };
 
-  const handlePrev = (id, total) => {
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setFilters({
+      location: '',
+      priceRange: '',
+      propertyType: ''
+    });
+  };
+
+  const handleImageChange = (propertyId, newIndex) => {
     setCurrentImageIndex((prev) => ({
       ...prev,
-      [id]: prev[id] <= 0 ? total - 1 : (prev[id] || 0) - 1,
+      [propertyId]: newIndex,
     }));
   };
 
   return (
-    <div className="mb-10">
-      <h2 className="text-xl font-semibold mb-4">Property Listings</h2>
+    <div className="min-h-screen bg-gray-50">
+      {/* Filters Component */}
+      <Filters
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onClearFilters={handleClearFilters}
+      />
 
-      {/* Tabs */}
-      <div className="flex gap-3 mb-6">
-        {['all', 'available', 'occupied'].map((type) => (
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header */}
+        <div className="mb-6">
+          <Typography.Heading level={2} className="text-secondary-900 mb-2">
+            Property Listings
+          </Typography.Heading>
+          <Typography.BodyText variant="muted" className="text-base">
+            Discover your perfect home from our curated collection of properties
+          </Typography.BodyText>
+        </div>
+
+        {/* Results Count */}
+        <div className="mb-6 flex items-center justify-between">
+          <Typography.BodyText variant="muted">
+            Showing {filtered.length} of {properties.length} properties
+          </Typography.BodyText>
+          
+          {/* Refresh Button */}
           <button
-            key={type}
-            onClick={() => setView(type)}
-            className={`px-4 py-2 rounded-full text-sm border transition ${
-              view === type
-                ? 'bg-[#003B4C] text-white border-[#003B4C]'
-                : 'text-gray-700 border-gray-300 hover:bg-gray-100'
-            }`}
+            onClick={handleRefresh}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors duration-200"
           >
-            {type === 'all' ? 'All' : type === 'available' ? 'Available' : 'Occupied'}
+            <svg className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {loading ? 'Refreshing...' : 'Refresh'}
           </button>
-        ))}
-      </div>
+        </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Search by location"
-          onChange={(e) => setFilter({ ...filter, location: e.target.value })}
-          className="px-3 py-2 border rounded-md w-full sm:w-auto"
-        />
-        <input
-          type="number"
-          placeholder="Max Price"
-          onChange={(e) => setFilter({ ...filter, price: e.target.value })}
-          className="px-3 py-2 border rounded-md w-full sm:w-auto"
-        />
-      </div>
-
-      {/* Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtered.map((property) => {
-          const index = currentImageIndex[property.id] || 0;
-          const totalImages = property.images.length;
-
-          return (
-            <Transition
-              key={property.id}
-              appear
-              show={true}
-              enter="transition transform duration-500 ease-out"
-              enterFrom="opacity-0 translate-y-4"
-              enterTo="opacity-100 translate-y-0"
-            >
-              <div className="bg-white rounded-lg shadow-md p-4 relative">
-                {/* Image with controls */}
-                <div className="relative mb-4">
-                  <img
-                    src={property.images[index]}
-                    alt={`${property.name} - ${index + 1}`}
-                    className="w-full h-48 object-cover rounded-md"
-                  />
-                  {totalImages > 1 && (
-                    <>
-                      <button
-                        onClick={() => handlePrev(property.id, totalImages)}
-                        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white border shadow px-2 py-1 rounded-full text-sm"
-                      >
-                        ◀
-                      </button>
-                      <button
-                        onClick={() => handleNext(property.id, totalImages)}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white border shadow px-2 py-1 rounded-full text-sm"
-                      >
-                        ▶
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                <h3 className="text-lg font-bold">{property.name}</h3>
-                <p className="text-sm text-gray-500">{property.location}</p>
-
-                {/* Availability */}
-                <div className="mt-2 mb-1">
-                  <span
-                    title={
-                      property.available
-                        ? 'This property is currently open for booking.'
-                        : 'This property is currently unavailable.'
-                    }
-                    className={`inline-block px-3 py-1 text-xs rounded-full font-medium shadow-sm cursor-help ${
-                      property.available
-                        ? 'bg-green-100 text-green-700 border border-green-300'
-                        : 'bg-red-100 text-red-700 border border-red-300'
-                    }`}
-                  >
-                    {property.available ? 'Available' : 'Occupied'}
-                  </span>
-                </div>
-
-                <p className="text-sm text-gray-700">Ksh {property.price.toLocaleString()}</p>
-
-                <ul className="text-xs mt-2 text-gray-500">
-                  {property.amenities.map((a, i) => (
-                    <li key={i}>• {a}</li>
-                  ))}
-                </ul>
-
-                {property.available && (
-                  <button
-                    className="mt-3 w-full bg-[#003B4C] text-white py-2 rounded-md hover:bg-blue-700 transition"
-                    onClick={() => handleExpressInterest(property)}
-                  >
-                    Express Interest
-                  </button>
-                )}
+        {/* Property Grid */}
+        {loading ? (
+          // Show skeleton cards while loading
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, index) => (
+              <SkeletonCard key={index} type="property" />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          // No results found
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto">
+              <div className="text-gray-400 mb-4">
+                <svg className="h-16 w-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
               </div>
-            </Transition>
-          );
-        })}
+              <Typography.Heading level={4} className="text-gray-600 mb-2">
+                No properties found
+              </Typography.Heading>
+              <Typography.BodyText variant="muted" className="mb-4">
+                Try adjusting your search criteria or filters
+              </Typography.BodyText>
+              <button
+                onClick={handleClearFilters}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
+              >
+                Clear All Filters
+              </button>
+            </div>
+          </div>
+        ) : (
+          // Property cards grid
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filtered.map((property) => (
+              <PropertyCard
+                key={property.id}
+                property={property}
+                onBook={handleExpressInterest}
+                currentImageIndex={currentImageIndex[property.id] || 0}
+                onImageChange={handleImageChange}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
