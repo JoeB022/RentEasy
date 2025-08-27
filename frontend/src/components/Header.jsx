@@ -1,6 +1,8 @@
 import React from 'react';
 import logo from '../assets/logo3.jpg';
 import { Button, Typography } from './ui';
+import { LogoutButton } from './common';
+import { isAuthenticated, getUserRole } from '../utils/auth';
 
 const Header = ({ onAuthOpen }) => {
   return (
@@ -36,25 +38,49 @@ const Header = ({ onAuthOpen }) => {
 
           {/* CTA / Auth */}
           <div className="hidden md:flex space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onAuthOpen('login')}
-              className="text-white hover:bg-primary-600 hover:text-white"
-            >
-              Login
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => onAuthOpen('signup')}
-            >
-              Sign Up
-            </Button>
+            {isAuthenticated() ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-white opacity-90">
+                  Welcome, {getUserRole() || 'User'}
+                </span>
+                <LogoutButton 
+                  variant="outline" 
+                  size="sm"
+                  className="border-white text-white hover:bg-white hover:text-[#003B4C]"
+                />
+              </div>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onAuthOpen('login')}
+                  className="text-white hover:bg-primary-600 hover:text-white"
+                >
+                  Login
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => onAuthOpen('signup')}
+                >
+                  Sign Up
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Icon */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center gap-2">
+            {isAuthenticated() && (
+              <LogoutButton 
+                variant="outline" 
+                size="sm"
+                className="border-white text-white hover:bg-white hover:text-[#003B4C] text-xs px-2 py-1"
+              >
+                Logout
+              </LogoutButton>
+            )}
             <button aria-label="Open menu">
               <svg
                 className="h-6 w-6 text-white"

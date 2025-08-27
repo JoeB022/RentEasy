@@ -9,6 +9,7 @@ import { Navigate } from 'react-router-dom';
 import { TextInput, SubmitButton } from './forms';
 import { setToken, clearToken, isAuthenticated } from '../utils/auth';
 import { Button, Typography } from './ui';
+import { jwtDecode } from 'jwt-decode';
 
 // Validation schemas
 const loginSchema = yup.object({
@@ -23,6 +24,10 @@ const loginSchema = yup.object({
 });
 
 const signupSchema = yup.object({
+  username: yup
+    .string()
+    .required('Username is required')
+    .min(3, 'Username must be at least 3 characters'),
   email: yup
     .string()
     .required('Email is required')
@@ -30,11 +35,7 @@ const signupSchema = yup.object({
   password: yup
     .string()
     .required('Password is required')
-    .min(6, 'Password must be at least 6 characters')
-    .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      'Password must contain at least one uppercase letter, one lowercase letter, and one number'
-    ),
+    .min(6, 'Password must be at least 6 characters'),
   confirmPassword: yup
     .string()
     .required('Please confirm your password')
@@ -44,39 +45,86 @@ const signupSchema = yup.object({
 // 🔐 Login API call
 const login = async (email, password) => {
   try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/token/`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: email, password }),
+      body: JSON.stringify({ email, password }),
     });
 
-    if (!res.ok) throw new Error('Invalid credentials');
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Login failed');
+    }
 
     const data = await res.json();
     
-    // Store both access and refresh tokens using the new auth utility
-    setToken(data.access, data.refresh || 'mock_refresh_token', data.role, data.username);
+    // Validate response structure
+    if (!data.tokens || !data.user) {
+      throw new Error('Invalid response format from server');
+    }
+    
+    // Extract tokens and user data
+    const { tokens, user } = data;
+    
+    // Store tokens in localStorage
+    localStorage.setItem('access_token', tokens.access_token);
+    localStorage.setItem('refresh_token', tokens.refresh_token);
+    
+    // Decode JWT to extract role
+    let userRole;
+    try {
+      const decodedToken = jwtDecode(tokens.access_token);
+      userRole = decodedToken.role || user.role;
+    } catch (decodeError) {
+      console.warn('JWT decode failed, using role from user data:', decodeError);
+      userRole = user.role;
+    }
+    
+    // Validate and store role in localStorage
+    const validRoles = ['tenant', 'landlord', 'admin'];
+    if (!validRoles.includes(userRole)) {
+      console.warn('Invalid role received:', userRole, 'defaulting to tenant');
+      userRole = 'tenant';
+    }
+    
+    localStorage.setItem('user_role', userRole);
+    localStorage.setItem('username', user.username);
+    
+    // Also use the existing auth utility for compatibility
+    setToken(tokens.access_token, tokens.refresh_token, userRole, user.username);
 
-    // 🔐 Token-based secure GET request after login
-    const token = data.access;
-    const secureRes = await fetch(`${import.meta.env.VITE_API_URL}/your-endpoint/`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+    // Log successful login for debugging
+    console.log('Login successful:', {
+      username: user.username,
+      role: userRole,
+      tokensStored: !!tokens.access_token
     });
 
-    if (!secureRes.ok) {
-      toast.error('⚠️ Token is invalid or expired.');
-    } else {
-      const responseData = await secureRes.json();
-      console.log('Secure data:', responseData);
-    }
-
-    return data;
+    return { user: { ...user, role: userRole }, tokens };
   } catch (error) {
     toast.error('❌ Login failed: ' + error.message);
+    throw error;
+  }
+};
+
+// 🆕 Registration API call
+const register = async (username, email, password, role) => {
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password, role }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Registration failed');
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    toast.error('❌ Registration failed: ' + error.message);
     throw error;
   }
 };
@@ -84,8 +132,15 @@ const login = async (email, password) => {
 // 🔓 Logout function
 export const logout = () => {
   clearToken();
-  toast.success('👋 Logged out');
-  window.location.href = '/';
+  
+  // Clear localStorage items
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('user_role');
+  localStorage.removeItem('username');
+  
+  toast.success('👋 Logged out successfully');
+  window.location.href = '/login';
 };
 
 // 🛡️ Route protection
@@ -99,6 +154,24 @@ const Auth = ({ mode = 'login', onClose }) => {
   const [activeTab, setActiveTab] = useState(mode);
   const [role, setRole] = useState('tenant');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [backendError, setBackendError] = useState('');
+
+  // Check if user is already logged in and redirect
+  React.useEffect(() => {
+    const storedRole = localStorage.getItem('user_role');
+    const storedToken = localStorage.getItem('access_token');
+    
+    if (storedRole && storedToken) {
+      // User is already logged in, redirect to appropriate dashboard
+      if (storedRole === 'tenant') {
+        window.location.href = '/dashboard/tenant';
+      } else if (storedRole === 'landlord') {
+        window.location.href = '/dashboard/landlord';
+      } else if (storedRole === 'admin') {
+        window.location.href = '/dashboard/admin';
+      }
+    }
+  }, []);
 
   // Form hooks for login and signup
   const loginForm = useForm({
@@ -121,28 +194,50 @@ const Auth = ({ mode = 'login', onClose }) => {
     } else {
       signupForm.clearErrors();
     }
+    // Clear backend errors
+    setBackendError('');
   };
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     
     try {
-      if (activeTab === 'login') {
+            if (activeTab === 'login') {
         const res = await login(data.email, data.password);
         toast.success('✅ Logged in successfully!');
         if (onClose) onClose();
-
-        const userRole = res.role;
-        if (userRole === 'tenant') window.location.href = '/dashboard/tenant';
-        else if (userRole === 'landlord') window.location.href = '/dashboard/landlord';
-        else if (userRole === 'admin') window.location.href = '/dashboard/admin';
-        else window.location.href = '/dashboard';
+        
+        // Clear backend error
+        setBackendError('');
+        
+        // Get role from localStorage (set by login function)
+        const userRole = localStorage.getItem('user_role');
+        
+        // Redirect based on role
+        if (userRole === 'tenant') {
+          window.location.href = '/dashboard/tenant';
+        } else if (userRole === 'landlord') {
+          window.location.href = '/dashboard/landlord';
+        } else if (userRole === 'admin') {
+          window.location.href = '/dashboard/admin';
+        } else {
+          // Fallback to general dashboard
+          window.location.href = '/dashboard';
+        }
       } else {
-        toast.success('🎉 Account created successfully! (SignUp not connected)');
+        // Handle registration
+        const res = await register(data.username, data.email, data.password, role);
+        toast.success('🎉 Account created successfully!');
         if (onClose) onClose();
+        
+        // Clear backend error and redirect to login page
+        setBackendError('');
+        setActiveTab('login');
+        signupForm.reset();
       }
     } catch (err) {
       // Error handled by toast
+      setBackendError(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -190,22 +285,43 @@ const Auth = ({ mode = 'login', onClose }) => {
         </Typography.BodyText>
       </div>
 
-      {/* Role Selector */}
-      <div className="mb-4">
-        <Typography.Label className="mb-1">Select Role</Typography.Label>
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#007C99] focus:outline-none"
-        >
-          <option value="tenant">Tenant</option>
-          <option value="landlord">Landlord</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
+      {/* Role Selector - Only show for signup */}
+      {activeTab === 'signup' && (
+        <div className="mb-4">
+          <Typography.Label className="mb-1">Select Role</Typography.Label>
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#007C99] focus:outline-none"
+          >
+            <option value="tenant">Tenant</option>
+            <option value="landlord">Landlord</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={currentForm.handleSubmit(onSubmit)} className="space-y-4">
+        {activeTab === 'signup' && (
+          <TextInput
+            label="Username"
+            name="username"
+            type="text"
+            placeholder="Enter your username"
+            required
+            error={currentForm.formState.errors.username?.message}
+            {...currentForm.register('username')}
+          />
+        )}
+        
+        {/* Backend Error Display */}
+        {backendError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+            {backendError}
+          </div>
+        )}
+        
         <TextInput
           label="Email Address"
           name="email"

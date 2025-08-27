@@ -9,6 +9,7 @@ import { Home, CalendarCheck, ClipboardList, Wrench, User, Menu, X, Palette } fr
 import useAuthFetch from '../hooks/useAuthFetch';
 import { getUsername, getUserRole } from '../utils/auth';
 import { Typography } from '../components/ui';
+import { LogoutButton } from '../components/common';
 
 const TenantDashboard = () => {
   console.log('TenantDashboard: Component rendering');
@@ -190,6 +191,15 @@ const TenantDashboard = () => {
               </div>
             </button>
           ))}
+          
+          {/* Logout Button in Mobile Sidebar */}
+          <div className="pt-4 border-t border-primary-400">
+            <LogoutButton 
+              variant="outline" 
+              size="sm"
+              className="w-full border-white text-white hover:bg-white hover:text-primary-500"
+            />
+          </div>
         </div>
       </aside>
 
@@ -213,6 +223,15 @@ const TenantDashboard = () => {
               </div>
             </button>
           ))}
+          
+          {/* Logout Button in Desktop Sidebar */}
+          <div className="pt-4 border-t border-primary-400">
+            <LogoutButton 
+              variant="outline" 
+              size="sm"
+              className="w-full border-white text-white hover:bg-white hover:text-primary-500"
+            />
+          </div>
         </div>
       </aside>
 
@@ -228,10 +247,19 @@ const TenantDashboard = () => {
             <Menu size={20} className="text-white" />
           </button>
           
-          <Typography.Heading level={3} className="text-white">Tenant Dashboard</Typography.Heading>
-          <Typography.BodyText className="text-white opacity-90">
-            Welcome, {getUsername() || 'Tenant'} ({getUserRole() || 'tenant'})
-          </Typography.BodyText>
+          <div className="flex items-center gap-4">
+            <Typography.Heading level={3} className="text-white">Tenant Dashboard</Typography.Heading>
+            <Typography.BodyText className="text-white opacity-90">
+              Welcome, {getUsername() || 'Tenant'} ({getUserRole() || 'tenant'})
+            </Typography.BodyText>
+          </div>
+          
+          {/* Logout Button */}
+          <LogoutButton 
+            variant="outline" 
+            size="sm"
+            className="border-white text-white hover:bg-white hover:text-primary-500"
+          />
         </header>
 
         {/* Scrollable Main Content */}

@@ -14,6 +14,7 @@ import TenantsByHouse from '../components/TenantsByHouse';
 import RealTimePayments from '../components/RealTimePayment2';
 import ApartmentServiceAddons from '../components/ApartmentServiceAddons';
 import LandlordProfile from '../components/LandlordProfile';
+import { LogoutButton } from '../components/common';
 
 const LandlordDashboard = () => {
   const [activeTab, setActiveTab] = useState('properties');
@@ -110,6 +111,15 @@ const LandlordDashboard = () => {
               </div>
             </button>
           ))}
+          
+          {/* Logout Button in Mobile Sidebar */}
+          <div className="pt-4 border-t border-[#005A6E]">
+            <LogoutButton 
+              variant="outline" 
+              size="sm"
+              className="w-full border-white text-white hover:bg-white hover:text-[#003B4C]"
+            />
+          </div>
         </div>
       </aside>
 
@@ -133,6 +143,15 @@ const LandlordDashboard = () => {
               </div>
             </button>
           ))}
+          
+          {/* Logout Button in Desktop Sidebar */}
+          <div className="pt-4 border-t border-[#005A6E]">
+            <LogoutButton 
+              variant="outline" 
+              size="sm"
+              className="w-full border-white text-white hover:bg-white hover:text-[#003B4C]"
+            />
+          </div>
         </div>
       </aside>
 
@@ -148,8 +167,17 @@ const LandlordDashboard = () => {
             <Menu size={20} className="text-white" />
           </button>
           
-          <h1 className="text-xl font-bold">Landlord Dashboard</h1>
-          <div className="text-sm opacity-90">Welcome, Landlord</div>
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold">Landlord Dashboard</h1>
+            <div className="text-sm opacity-90">Welcome, Landlord</div>
+          </div>
+          
+          {/* Logout Button */}
+          <LogoutButton 
+            variant="outline" 
+            size="sm"
+            className="border-white text-white hover:bg-white hover:text-[#003B4C]"
+          />
         </header>
 
         {/* Scrollable Main Content */}

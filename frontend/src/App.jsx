@@ -10,6 +10,7 @@ import Auth from './components/Auth';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import Loader from './components/Loader';
+import ProtectedRouteDemo from './components/ProtectedRouteDemo';
 
 // Lazy load dashboard pages for code splitting
 const TenantDashboard = lazy(() => import('./pages/TenantDashboard'));
@@ -62,6 +63,27 @@ function App() {
                   }
                 />
                 <Route path="/unauthorized" element={<Unauthorized />} />
+                <Route path="/demo/protected-route" element={<ProtectedRouteDemo />} />
+                <Route 
+                  path="/login" 
+                  element={
+                    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+                        <Auth mode="login" onClose={() => {}} />
+                      </div>
+                    </div>
+                  } 
+                />
+                <Route 
+                  path="/signup" 
+                  element={
+                    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+                        <Auth mode="signup" onClose={() => {}} />
+                      </div>
+                    </div>
+                  } 
+                />
                 <Route 
                   path="/dashboard/tenant" 
                   element={

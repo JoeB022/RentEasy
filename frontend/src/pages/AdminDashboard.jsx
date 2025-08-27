@@ -20,6 +20,7 @@ import ServiceRatesEditor from '../components/ServiceRatesEditor';
 import AllUsers from '../components/AllUsers';
 import LogsAndFeedback from '../components/LogsAndFeedback';
 import AdminApprovalPanel from '../components/AdminApprovalPanel';
+import { LogoutButton } from '../components/common';
 
 // Dummy logs and feedback data
 const initialEntries = [
@@ -125,6 +126,15 @@ const AdminDashboard = () => {
               )}
             </button>
           ))}
+          
+          {/* Logout Button in Mobile Sidebar */}
+          <div className="pt-4 border-t border-[#005A6E]">
+            <LogoutButton 
+              variant="outline" 
+              size="sm"
+              className="w-full border-white text-white hover:bg-white hover:text-[#003B4C]"
+            />
+          </div>
         </div>
       </aside>
 
@@ -153,6 +163,15 @@ const AdminDashboard = () => {
               )}
             </button>
           ))}
+          
+          {/* Logout Button in Desktop Sidebar */}
+          <div className="pt-4 border-t border-[#005A6E]">
+            <LogoutButton 
+              variant="outline" 
+              size="sm"
+              className="w-full border-white text-white hover:bg-white hover:text-[#003B4C]"
+            />
+          </div>
         </div>
       </aside>
 
@@ -168,8 +187,17 @@ const AdminDashboard = () => {
             <Menu size={20} className="text-white" />
           </button>
           
-          <h1 className="text-xl font-bold">Admin Dashboard</h1>
-          <div className="text-sm opacity-90">Welcome, Admin</div>
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold">Admin Dashboard</h1>
+            <div className="text-sm opacity-90">Welcome, Admin</div>
+          </div>
+          
+          {/* Logout Button */}
+          <LogoutButton 
+            variant="outline" 
+            size="sm"
+            className="border-white text-white hover:bg-white hover:text-[#003B4C]"
+          />
         </header>
 
         {/* Scrollable Main Content */}
