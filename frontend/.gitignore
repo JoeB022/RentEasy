@@ -177,3 +177,37 @@ coverage.xml
 .mypy_cache/
 .pytest_cache/
 .hypothesis/
+
+# Backend
+__pycache__/
+*.py[cod]
+*.so
+.Python
+build/
+venv/
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+htmlcov/
