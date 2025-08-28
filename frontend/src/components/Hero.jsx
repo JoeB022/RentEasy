@@ -1,11 +1,19 @@
 const Hero = ({ isSkeleton = false, onGetStarted }) => {
   const scrollToFeatures = () => {
+    console.log('Learn More button clicked');
     const featuresSection = document.querySelector('#features');
     if (featuresSection) {
       featuresSection.scrollIntoView({ 
         behavior: 'smooth',
         block: 'start'
       });
+    }
+  };
+
+  const handleGetStarted = () => {
+    console.log('Get Started button clicked');
+    if (onGetStarted) {
+      onGetStarted();
     }
   };
 
@@ -40,7 +48,7 @@ const Hero = ({ isSkeleton = false, onGetStarted }) => {
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <button 
-                onClick={onGetStarted}
+                onClick={handleGetStarted}
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-8 py-4 rounded-2xl text-white font-bold text-lg transition-all duration-500 transform hover:scale-110 hover:shadow-2xl cursor-pointer shadow-lg"
               >
                 Get Started

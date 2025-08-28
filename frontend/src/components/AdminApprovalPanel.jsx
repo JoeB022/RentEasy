@@ -302,13 +302,13 @@ const AdminApprovalPanel = () => {
       {/* Listings */}
       <div className="space-y-6">
         {filteredListings.map((listing) => (
-          <div
-            key={listing.id}
+        <div
+          key={listing.id}
             className="bg-gradient-to-br from-white to-[#f8fafc] border-2 border-white/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden backdrop-blur-sm"
-          >
+        >
             <div className="p-6">
               <div className="flex flex-col lg:flex-row gap-6">
-                {/* Left: Image + Info */}
+          {/* Left: Image + Info */}
                 <div className="flex items-start gap-6 flex-1">
                   <input
                     type="checkbox"
@@ -316,17 +316,17 @@ const AdminApprovalPanel = () => {
                     onChange={() => toggleSelect(listing.id)}
                     className="w-4 h-4 text-[#007C99] bg-white border-2 border-[#007C99] rounded focus:ring-2 focus:ring-[#007C99]/20 cursor-pointer mt-2"
                   />
-                  <img
-                    src={listing.images[0]}
-                    alt={listing.name}
+            <img
+              src={listing.images[0]}
+              alt={listing.name}
                     className="w-32 h-32 object-cover rounded-2xl border-2 border-white/50 shadow-lg"
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
                       <h3 className="text-xl font-bold text-[#003B4C] flex items-center gap-2">
                         <Home className="w-5 h-5 text-[#007C99]" />
-                        {listing.name}
-                      </h3>
+                {listing.name}
+              </h3>
                       <span className={getPropertyTypeBadge(listing.propertyType)}>
                         {listing.propertyType}
                       </span>
@@ -365,43 +365,43 @@ const AdminApprovalPanel = () => {
 
                     <span className={getStatusBadge(listing.approved)}>
                       {listing.approved ? '✅ Approved' : '⏳ Pending Approval'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Right: Action Buttons */}
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                  {!listing.approved ? (
-                    <>
-                      <button
-                        onClick={() => handleApproval(listing.id, true)}
-                        className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
-                      >
-                        <CheckCircle className="w-5 h-5" />
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleApproval(listing.id, false)}
-                        className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
-                      >
-                        <XCircle className="w-5 h-5" />
-                        Reject
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => handleApproval(listing.id, false)}
-                      className="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
-                    >
-                      <XSquare className="w-5 h-5" />
-                      Revoke Approval
-                    </button>
-                  )}
-                </div>
-              </div>
+              </span>
             </div>
           </div>
-        ))}
+
+          {/* Right: Action Buttons */}
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            {!listing.approved ? (
+              <>
+                <button
+                  onClick={() => handleApproval(listing.id, true)}
+                        className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
+                >
+                        <CheckCircle className="w-5 h-5" />
+                  Approve
+                </button>
+                <button
+                  onClick={() => handleApproval(listing.id, false)}
+                        className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
+                >
+                        <XCircle className="w-5 h-5" />
+                  Reject
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => handleApproval(listing.id, false)}
+                      className="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium"
+              >
+                      <XSquare className="w-5 h-5" />
+                Revoke Approval
+              </button>
+            )}
+                </div>
+              </div>
+          </div>
+        </div>
+      ))}
 
         {filteredListings.length === 0 && (
           <div className="text-center py-12">

@@ -16,7 +16,13 @@ const Header = ({ onAuthOpen }) => {
   ];
 
   const handleNavigation = (path) => {
+    console.log('Navigation clicked:', path);
     navigate(path);
+  };
+
+  const handleAuthOpen = (mode) => {
+    console.log('Auth button clicked:', mode);
+    onAuthOpen(mode);
   };
 
   return (
@@ -72,7 +78,7 @@ const Header = ({ onAuthOpen }) => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onAuthOpen('login')}
+                  onClick={() => handleAuthOpen('login')}
                   className="text-white hover:bg-white/20 hover:text-white backdrop-blur-sm border border-white/30 hover:border-white/50 transition-all duration-300 transform hover:scale-105 hover:shadow-md px-6 py-2 rounded-xl"
                 >
                   Login
@@ -80,7 +86,7 @@ const Header = ({ onAuthOpen }) => {
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => onAuthOpen('signup')}
+                  onClick={() => handleAuthOpen('signup')}
                   className="bg-gradient-to-r from-[#007C99] to-[#0099B3] hover:from-[#0088A3] hover:to-[#00A6C0] text-white transition-all duration-300 transform hover:scale-105 hover:shadow-lg px-6 py-2 rounded-xl font-medium"
                 >
                   Sign Up
@@ -103,6 +109,7 @@ const Header = ({ onAuthOpen }) => {
             <button 
               aria-label="Open menu"
               className="p-2 rounded-lg hover:bg-white/20 transition-all duration-300 transform hover:scale-105"
+              onClick={() => console.log('Mobile menu clicked')}
             >
               <svg
                 className="h-6 w-6 text-white"

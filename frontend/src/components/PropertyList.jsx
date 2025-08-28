@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import SkeletonCard from './SkeletonCard';
 import PropertyCard from './PropertyCard';
 import Filters from './Filters';
 import { Typography } from './ui';
+import useAuthFetch from '../hooks/useAuthFetch';
 
 const PropertyList = ({ onBook }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -13,9 +14,50 @@ const PropertyList = ({ onBook }) => {
     propertyType: ''
   });
   const [currentImageIndex, setCurrentImageIndex] = useState({}); // track per property
-  const [loading, setLoading] = useState(false); // New state for loading
+  const [loading, setLoading] = useState(true); // Start with loading true
+  const [properties, setProperties] = useState([]); // Now state-based
+  const { get } = useAuthFetch();
 
-  const properties = [
+  // Fetch properties from API on component mount and when filters change
+  useEffect(() => {
+    fetchProperties();
+  }, [filters]);
+
+  const fetchProperties = async () => {
+    try {
+      setLoading(true);
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (filters.location) params.append('location', filters.location);
+      if (filters.priceRange) {
+        const [min, max] = filters.priceRange.split(' - ');
+        if (min) params.append('min_price', min.replace('K', '000'));
+        if (max) params.append('max_price', max.replace('K', '000'));
+      }
+      if (filters.propertyType) params.append('type', filters.propertyType);
+      
+      const response = await get(`/api/properties?${params.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        setProperties(data.properties || []);
+      } else {
+        toast.error('Failed to fetch properties');
+        // Fallback to sample properties if API fails
+        setProperties(sampleProperties);
+      }
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+      toast.error('Failed to fetch properties');
+      // Fallback to sample properties if API fails
+      setProperties(sampleProperties);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sample properties for fallback (remove this after API is working)
+  const sampleProperties = [
     {
       id: 1,
       name: '2 Bedroom Apartment',
@@ -156,12 +198,9 @@ const PropertyList = ({ onBook }) => {
     if (onBook) onBook(property);
   };
 
-  // Function to demonstrate loading state
+  // Function to refresh properties from API
   const handleRefresh = async () => {
-    setLoading(true);
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setLoading(false);
+    await fetchProperties();
   };
 
   // Enhanced filtering logic
@@ -171,9 +210,9 @@ const PropertyList = ({ onBook }) => {
       const searchMatch = !searchQuery || 
         property.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         property.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        property.amenities.some(amenity => 
+        (property.amenities && property.amenities.some(amenity => 
           amenity.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        ));
 
       // Location filter
       const locationMatch = !filters.location || 
@@ -194,7 +233,7 @@ const PropertyList = ({ onBook }) => {
 
       // Property type filter
       const typeMatch = !filters.propertyType || 
-        property.propertyType === filters.propertyType;
+        property.property_type === filters.propertyType;
 
       return searchMatch && locationMatch && priceMatch && typeMatch;
     });

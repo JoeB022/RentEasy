@@ -125,6 +125,25 @@ const Filters = ({
                 </svg>
               </div>
             </div>
+
+            {/* GPS Location Filter */}
+            <div className="relative min-w-[140px]">
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <select
+                value={filters.hasGps || ''}
+                onChange={(e) => onFilterChange('hasGps', e.target.value)}
+                className="pl-10 pr-8 py-2.5 w-full text-sm border border-gray-300 rounded-lg focus:border-primary-500 focus:ring-primary-500 bg-white appearance-none cursor-pointer hover:border-gray-400 transition-colors duration-200"
+              >
+                <option value="">All Properties</option>
+                <option value="true">With GPS Coordinates</option>
+                <option value="false">Without GPS Coordinates</option>
+              </select>
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
 
           {/* Clear Filters Button */}
@@ -140,7 +159,7 @@ const Filters = ({
         </div>
 
         {/* Active Filters Display */}
-        {(filters.location || filters.priceRange || filters.propertyType) && (
+        {(filters.location || filters.priceRange || filters.propertyType || filters.hasGps) && (
           <div className="mt-3 flex flex-wrap gap-2">
             <span className="text-sm text-gray-500">Active filters:</span>
             {filters.location && (
@@ -170,6 +189,17 @@ const Filters = ({
                 🏠 {filters.propertyType}
                 <button
                   onClick={() => onFilterChange('propertyType', '')}
+                  className="ml-1 hover:bg-primary-200 rounded-full p-0.5"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {filters.hasGps && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-full">
+                📍 {filters.hasGps === 'true' ? 'With GPS' : 'Without GPS'}
+                <button
+                  onClick={() => onFilterChange('hasGps', '')}
                   className="ml-1 hover:bg-primary-200 rounded-full p-0.5"
                 >
                   ×

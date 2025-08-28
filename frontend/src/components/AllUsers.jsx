@@ -181,29 +181,29 @@ const AllUsers = () => {
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-[#007C99]" />
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
                 className="px-4 py-2 border-2 border-[#007C99]/30 rounded-xl focus:border-[#007C99] focus:ring-2 focus:ring-[#007C99]/20 transition-all duration-300 hover:border-[#007C99]/50 bg-white/80 backdrop-blur-sm cursor-pointer"
-              >
-                <option value="All">All Roles</option>
-                <option value="tenant">Tenants</option>
-                <option value="landlord">Landlords</option>
-                <option value="admin">Admins</option>
-              </select>
+          >
+            <option value="All">All Roles</option>
+            <option value="tenant">Tenants</option>
+            <option value="landlord">Landlords</option>
+            <option value="admin">Admins</option>
+          </select>
             </div>
 
             <div className="flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-[#007C99]" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-4 py-2 border-2 border-[#007C99]/30 rounded-xl focus:border-[#007C99] focus:ring-2 focus:ring-[#007C99]/20 transition-all duration-300 hover:border-[#007C99]/50 bg-white/80 backdrop-blur-sm cursor-pointer"
-              >
-                <option value="All">All Status</option>
-                <option value="active">Active</option>
-                <option value="suspended">Suspended</option>
-              </select>
+          >
+            <option value="All">All Status</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+          </select>
             </div>
           </div>
 
@@ -216,20 +216,20 @@ const AllUsers = () => {
         <div className="mt-6">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#007C99]" />
-            <input
-              type="text"
+          <input
+            type="text"
               placeholder="Search by name or email..."
               className="w-full pl-10 pr-4 py-3 border-2 border-[#007C99]/30 rounded-xl focus:border-[#007C99] focus:ring-2 focus:ring-[#007C99]/20 transition-all duration-300 hover:border-[#007C99]/50 bg-white/80 backdrop-blur-sm outline-none"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
           </div>
         </div>
       </div>
 
       {/* Table */}
       <div className="bg-gradient-to-br from-white to-[#f8fafc] rounded-2xl shadow-xl border border-white/50 overflow-hidden backdrop-blur-sm">
-        <div className="overflow-x-auto">
+      <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead className="bg-gradient-to-r from-[#003B4C] to-[#007C99] text-white">
               <tr>
@@ -239,10 +239,10 @@ const AllUsers = () => {
                 <th className="px-8 py-4 text-left font-bold">Join Date</th>
                 <th className="px-8 py-4 text-left font-bold">Last Active</th>
                 <th className="px-8 py-4 text-left font-bold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user) => (
+            </tr>
+          </thead>
+          <tbody>
+            {filteredUsers.map((user) => (
                 <tr key={user.id} className="border-b border-white/50 hover:bg-gradient-to-r hover:from-white/50 hover:to-[#f8fafc]/50 transition-all duration-300">
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
@@ -262,15 +262,15 @@ const AllUsers = () => {
                     <div className="flex items-center gap-2">
                       {getRoleIcon(user.role)}
                       <span className={getRoleBadge(user.role)}>
-                        {user.role}
-                      </span>
+                    {user.role}
+                  </span>
                     </div>
-                  </td>
+                </td>
                   <td className="px-8 py-6">
                     <span className={getStatusBadge(user.status)}>
-                      {user.status}
-                    </span>
-                  </td>
+                    {user.status}
+                  </span>
+                </td>
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-[#007C99]" />
@@ -292,33 +292,33 @@ const AllUsers = () => {
                       <button className="p-2 bg-gradient-to-r from-[#007C99] to-[#0099B3] text-white rounded-xl hover:from-[#0099B3] hover:to-[#007C99] transition-all duration-300 transform hover:scale-110 shadow-lg hover:shadow-xl">
                         <Eye className="w-4 h-4" />
                       </button>
-                      {user.status === 'active' ? (
-                        <button
+                  {user.status === 'active' ? (
+                    <button
                           className="p-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-110 shadow-lg hover:shadow-xl"
-                          onClick={() => suspendUser(user.id)}
-                        >
+                      onClick={() => suspendUser(user.id)}
+                    >
                           <UserX className="w-4 h-4" />
-                        </button>
-                      ) : (
-                        <button
+                    </button>
+                  ) : (
+                    <button
                           className="p-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-110 shadow-lg hover:shadow-xl"
-                          onClick={() => activateUser(user.id)}
-                        >
+                      onClick={() => activateUser(user.id)}
+                    >
                           <UserCheck className="w-4 h-4" />
-                        </button>
-                      )}
-                      <button
+                    </button>
+                  )}
+                  <button
                         className="p-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-300 transform hover:scale-110 shadow-lg hover:shadow-xl"
-                        onClick={() => deleteUser(user.id)}
-                      >
+                    onClick={() => deleteUser(user.id)}
+                  >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                  </button>
                     </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredUsers.length === 0 && (
-                <tr>
+                </td>
+              </tr>
+            ))}
+            {filteredUsers.length === 0 && (
+              <tr>
                   <td colSpan="6" className="text-center py-12">
                     <div className="flex flex-col items-center gap-4">
                       <div className="w-16 h-16 bg-gradient-to-r from-[#007C99] to-[#0099B3] rounded-full flex items-center justify-center">
@@ -333,11 +333,11 @@ const AllUsers = () => {
                         </p>
                       </div>
                     </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
         </div>
       </div>
     </div>

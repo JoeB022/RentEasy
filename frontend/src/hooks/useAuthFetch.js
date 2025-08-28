@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { buildApiUrl } from '../config/api';
 import { 
   getToken, 
   isTokenExpired, 
@@ -49,8 +50,11 @@ const useAuthFetch = () => {
       headers.Authorization = `Bearer ${token}`;
     }
 
+    // Build the full API URL
+    const fullUrl = url.startsWith('http') ? url : buildApiUrl(url);
+    
     // Make the request
-    const response = await fetch(url, {
+    const response = await fetch(fullUrl, {
       ...options,
       headers,
     });
@@ -63,7 +67,7 @@ const useAuthFetch = () => {
         headers.Authorization = `Bearer ${newToken}`;
         
         // Retry the request with new token
-        const retryResponse = await fetch(url, {
+        const retryResponse = await fetch(fullUrl, {
           ...options,
           headers,
         });

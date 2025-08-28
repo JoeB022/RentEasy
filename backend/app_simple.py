@@ -61,6 +61,87 @@ class User(db.Model):
         """Check if the role is admin (restricted)."""
         return role == 'admin'
 
+# Property Model
+class Property(db.Model):
+    __tablename__ = 'properties'
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    location = db.Column(db.String(200), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    property_type = db.Column(db.String(50), nullable=False)
+    bedrooms = db.Column(db.Integer, nullable=False)
+    bathrooms = db.Column(db.Integer, default=1)
+    square_feet = db.Column(db.Float, nullable=True)
+    available = db.Column(db.Boolean, default=True)
+    landlord_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False)
+    
+    # Amenities as JSON string
+    amenities = db.Column(db.Text, nullable=True)  # JSON string of amenities
+    
+    # Images as JSON string
+    images = db.Column(db.Text, nullable=True)  # JSON string of image URLs
+    
+    # Location coordinates
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    
+    def __init__(self, **kwargs):
+        super(Property, self).__init__(**kwargs)
+        if self.created_at is None:
+            self.created_at = datetime.now(timezone.utc)
+        if self.updated_at is None:
+            self.updated_at = datetime.now(timezone.utc)
+    
+    def to_dict(self):
+        """Convert property to dictionary for JSON response."""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'location': self.location,
+            'price': self.price,
+            'property_type': self.property_type,
+            'bedrooms': self.bedrooms,
+            'bathrooms': self.bathrooms,
+            'square_feet': self.square_feet,
+            'available': self.available,
+            'landlord_id': self.landlord_id,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'amenities': json.loads(self.amenities) if self.amenities else [],
+            'images': json.loads(self.images) if self.images else [],
+            'latitude': self.latitude,
+            'longitude': self.longitude
+        }
+    
+    @staticmethod
+    def from_dict(data, landlord_id):
+        """Create property from dictionary data."""
+        # Convert amenities and images to JSON strings
+        amenities = json.dumps(data.get('amenities', [])) if data.get('amenities') else None
+        images = json.dumps(data.get('images', [])) if data.get('images') else None
+        
+        return Property(
+            name=data['name'],
+            description=data.get('description', ''),
+            location=data['location'],
+            price=float(data['price']),
+            property_type=data['property_type'],
+            bedrooms=int(data['bedrooms']),
+            bathrooms=int(data.get('bathrooms', 1)),
+            square_feet=float(data.get('square_feet', 0)) if data.get('square_feet') else None,
+            available=data.get('available', True),
+            landlord_id=landlord_id,
+            amenities=amenities,
+            images=images,
+            latitude=float(data.get('latitude', 0)) if data.get('latitude') else None,
+            longitude=float(data.get('longitude', 0)) if data.get('longitude') else None
+        )
+
 def create_app():
     """Create Flask application."""
     app = Flask(__name__)
@@ -75,7 +156,7 @@ def create_app():
     
     # Initialize extensions
     db.init_app(app)
-    CORS(app)
+    CORS(app, origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"], supports_credentials=True)
     jwt.init_app(app)
     migrate.init_app(app, db)
     
@@ -321,6 +402,238 @@ def create_app():
             
         except Exception as e:
             return jsonify({'error': 'Token validation failed', 'details': str(e)}), 500
+
+    # Property Management Routes
+    @app.route('/api/properties', methods=['GET'])
+    def get_properties():
+        """Get all available properties (for tenants to browse)."""
+        try:
+            # Get query parameters for filtering
+            property_type = request.args.get('type')
+            location = request.args.get('location')
+            min_price = request.args.get('min_price')
+            max_price = request.args.get('max_price')
+            bedrooms = request.args.get('bedrooms')
+            has_gps = request.args.get('has_gps')  # New filter for properties with GPS coordinates
+            
+            # Start with base query
+            query = Property.query.filter_by(available=True)
+            
+            # Apply filters
+            if property_type:
+                query = query.filter(Property.property_type == property_type)
+            if location:
+                query = query.filter(Property.location.ilike(f'%{location}%'))
+            if min_price:
+                query = query.filter(Property.price >= float(min_price))
+            if max_price:
+                query = query.filter(Property.price <= float(max_price))
+            if bedrooms:
+                query = query.filter(Property.bedrooms >= int(bedrooms))
+            if has_gps == 'true':
+                query = query.filter(Property.latitude.isnot(None), Property.longitude.isnot(None))
+            elif has_gps == 'false':
+                query = query.filter((Property.latitude.is_(None)) | (Property.longitude.is_(None)))
+            
+            # Order by creation date (newest first)
+            properties = query.order_by(Property.created_at.desc()).all()
+            
+            # Convert to dictionaries
+            properties_data = [prop.to_dict() for prop in properties]
+            
+            return jsonify({
+                'message': 'Properties retrieved successfully',
+                'properties': properties_data,
+                'total': len(properties_data)
+            }), 200
+            
+        except Exception as e:
+            print(f"Error getting properties: {str(e)}")
+            return jsonify({'error': 'Failed to retrieve properties', 'details': str(e)}), 500
+
+    @app.route('/api/properties', methods=['POST'])
+    @jwt_required()
+    def create_property():
+        """Create a new property (landlords only)."""
+        try:
+            current_user = get_jwt_identity()
+            user_data = json.loads(current_user)
+            
+            # Check if user is a landlord
+            if user_data.get('role') != 'landlord':
+                return jsonify({'error': 'Only landlords can create properties'}), 403
+            
+            if not request.is_json:
+                return jsonify({'error': 'Content-Type must be application/json'}), 400
+            
+            data = request.get_json()
+            
+            # Validate required fields
+            required_fields = ['name', 'location', 'price', 'property_type', 'bedrooms']
+            for field in required_fields:
+                if not data.get(field):
+                    return jsonify({'error': f'{field} is required'}), 400
+            
+            # Create property
+            property_obj = Property.from_dict(data, user_data['user_id'])
+            
+            db.session.add(property_obj)
+            db.session.commit()
+            
+            print(f"Property '{property_obj.name}' created by landlord {user_data['username']}")
+            
+            return jsonify({
+                'message': 'Property created successfully',
+                'property': property_obj.to_dict()
+            }), 201
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating property: {str(e)}")
+            return jsonify({'error': 'Failed to create property', 'details': str(e)}), 500
+
+    @app.route('/api/properties/<int:property_id>', methods=['GET'])
+    def get_property(property_id):
+        """Get a specific property by ID."""
+        try:
+            property_obj = Property.query.get(property_id)
+            
+            if not property_obj:
+                return jsonify({'error': 'Property not found'}), 404
+            
+            return jsonify({
+                'message': 'Property retrieved successfully',
+                'property': property_obj.to_dict()
+            }), 200
+            
+        except Exception as e:
+            print(f"Error getting property {property_id}: {str(e)}")
+            return jsonify({'error': 'Failed to retrieve property', 'details': str(e)}), 500
+
+    @app.route('/api/properties/<int:property_id>', methods=['PUT'])
+    @jwt_required()
+    def update_property(property_id):
+        """Update a property (landlord who owns it only)."""
+        try:
+            current_user = get_jwt_identity()
+            user_data = json.loads(current_user)
+            
+            property_obj = Property.query.get(property_id)
+            
+            if not property_obj:
+                return jsonify({'error': 'Property not found'}), 404
+            
+            # Check if user owns this property
+            if property_obj.landlord_id != user_data['user_id']:
+                return jsonify({'error': 'You can only update your own properties'}), 403
+            
+            if not request.is_json:
+                return jsonify({'error': 'Content-Type must be application/json'}), 400
+            
+            data = request.get_json()
+            
+            # Update fields
+            if 'name' in data:
+                property_obj.name = data['name']
+            if 'description' in data:
+                property_obj.description = data['description']
+            if 'location' in data:
+                property_obj.location = data['location']
+            if 'price' in data:
+                property_obj.price = float(data['price'])
+            if 'property_type' in data:
+                property_obj.property_type = data['property_type']
+            if 'bedrooms' in data:
+                property_obj.bedrooms = int(data['bedrooms'])
+            if 'bathrooms' in data:
+                property_obj.bathrooms = int(data['bathrooms'])
+            if 'square_feet' in data:
+                property_obj.square_feet = float(data['square_feet']) if data['square_feet'] else None
+            if 'available' in data:
+                property_obj.available = bool(data['available'])
+            if 'amenities' in data:
+                property_obj.amenities = json.dumps(data['amenities']) if data['amenities'] else None
+            if 'images' in data:
+                property_obj.images = json.dumps(data['images']) if data['images'] else None
+            if 'latitude' in data:
+                property_obj.latitude = float(data['latitude']) if data['latitude'] else None
+            if 'longitude' in data:
+                property_obj.longitude = float(data['longitude']) if data['longitude'] else None
+            
+            property_obj.updated_at = datetime.now(timezone.utc)
+            
+            db.session.commit()
+            
+            print(f"Property '{property_obj.name}' updated by landlord {user_data['username']}")
+            
+            return jsonify({
+                'message': 'Property updated successfully',
+                'property': property_obj.to_dict()
+            }), 200
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error updating property {property_id}: {str(e)}")
+            return jsonify({'error': 'Failed to update property', 'details': str(e)}), 500
+
+    @app.route('/api/properties/<int:property_id>', methods=['DELETE'])
+    @jwt_required()
+    def delete_property(property_id):
+        """Delete a property (landlord who owns it only)."""
+        try:
+            current_user = get_jwt_identity()
+            user_data = json.loads(current_user)
+            
+            property_obj = Property.query.get(property_id)
+            
+            if not property_obj:
+                return jsonify({'error': 'Property not found'}), 404
+            
+            # Check if user owns this property
+            if property_obj.landlord_id != user_data['user_id']:
+                return jsonify({'error': 'You can only delete your own properties'}), 404
+            
+            property_name = property_obj.name
+            
+            db.session.delete(property_obj)
+            db.session.commit()
+            
+            print(f"Property '{property_name}' deleted by landlord {user_data['username']}")
+            
+            return jsonify({'message': 'Property deleted successfully'}), 200
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error deleting property {property_id}: {str(e)}")
+            return jsonify({'error': 'Failed to delete property', 'details': str(e)}), 500
+
+    @app.route('/api/landlord/properties', methods=['GET'])
+    @jwt_required()
+    def get_landlord_properties():
+        """Get properties owned by the authenticated landlord."""
+        try:
+            current_user = get_jwt_identity()
+            user_data = json.loads(current_user)
+            
+            # Check if user is a landlord
+            if user_data.get('role') != 'landlord':
+                return jsonify({'error': 'Only landlords can access this endpoint'}), 403
+            
+            # Get properties owned by this landlord
+            properties = Property.query.filter_by(landlord_id=user_data['user_id']).order_by(Property.created_at.desc()).all()
+            
+            # Convert to dictionaries
+            properties_data = [prop.to_dict() for prop in properties]
+            
+            return jsonify({
+                'message': 'Landlord properties retrieved successfully',
+                'properties': properties_data,
+                'total': len(properties_data)
+            }), 200
+            
+        except Exception as e:
+            print(f"Error getting landlord properties: {str(e)}")
+            return jsonify({'error': 'Failed to retrieve landlord properties', 'details': str(e)}), 500
 
     # Protected routes
     @app.route('/dashboard/tenant', methods=['GET'])

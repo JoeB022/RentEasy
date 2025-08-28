@@ -72,6 +72,15 @@ const PropertyCard = ({ property, onBook, currentImageIndex = 0, onImageChange }
           </span>
         </div>
 
+        {/* GPS Indicator Badge */}
+        {property.latitude && property.longitude && (
+          <div className="absolute top-3 left-20 z-10">
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full border bg-blue-100 text-blue-700 border-blue-300">
+              📍 GPS
+            </span>
+          </div>
+        )}
+
         {/* Image Container */}
         <div className="relative aspect-[4/3] overflow-hidden">
           <ResponsiveImage
