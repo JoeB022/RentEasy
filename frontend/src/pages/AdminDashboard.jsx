@@ -91,36 +91,42 @@ const AdminDashboard = () => {
 
       {/* Mobile Sidebar */}
       <aside className={`
-        fixed top-0 left-0 h-full w-64 bg-[#003B4C] text-white z-50 transform transition-transform duration-300 ease-in-out
+        fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-[#003B4C] to-[#005A6E] text-white z-50 transform transition-all duration-500 ease-in-out shadow-2xl
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:hidden
       `}>
-        <div className="flex items-center justify-between p-4 border-b border-[#005A6E]">
-          <h2 className="text-lg font-semibold text-white">Menu</h2>
+        <div className="flex items-center justify-between p-6 border-b border-white/20 bg-white/10 backdrop-blur-sm">
+          <h2 className="text-lg font-semibold text-white font-bold">Menu</h2>
           <button
             onClick={closeSidebar}
-            className="p-2 hover:bg-[#005A6E] rounded-md transition-colors"
+            className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300 transform hover:scale-110"
           >
             <X size={20} className="text-white" />
           </button>
         </div>
-        <div className="px-4 py-6 space-y-3">
+        <div className="px-6 py-8 space-y-4">
           {adminSections.map(({ name, icon: Icon, badge }) => (
             <button
               key={name}
-              className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm transition font-medium w-full ${
+              className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-300 font-medium w-full group ${
                 activeSection === name
-                  ? 'bg-white text-[#003B4C]'
-                  : 'text-white hover:bg-[#005A6E]'
+                  ? 'bg-gradient-to-r from-white to-blue-50 text-[#003B4C] shadow-lg transform scale-105'
+                  : 'text-white hover:bg-white/20 hover:text-white hover:shadow-md transform hover:scale-105 hover:-translate-y-0.5'
               }`}
               onClick={() => handleSectionChange(name)}
             >
-              <div className="flex items-center gap-2">
-                <Icon size={18} />
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg transition-all duration-300 ${
+                  activeSection === name 
+                    ? 'bg-[#003B4C]/20 text-[#003B4C]' 
+                    : 'bg-white/20 text-white group-hover:bg-white/30 group-hover:scale-110'
+                }`}>
+                  <Icon size={18} />
+                </div>
                 {name}
               </div>
               {badge && (
-                <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full shadow-md">
                   {badge}
                 </span>
               )}
@@ -128,36 +134,46 @@ const AdminDashboard = () => {
           ))}
           
           {/* Logout Button in Mobile Sidebar */}
-          <div className="pt-4 border-t border-[#005A6E]">
+          <div className="pt-6 border-t border-white/20">
             <LogoutButton 
               variant="outline" 
               size="sm"
-              className="w-full border-white text-white hover:bg-white hover:text-[#003B4C]"
+              className="w-full border-white/40 text-white hover:bg-white hover:text-[#003B4C] hover:border-white transition-all duration-300 transform hover:scale-105 hover:shadow-md rounded-xl"
             />
           </div>
         </div>
       </aside>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-[#003B4C] text-white fixed h-full z-30 shadow-lg">
-        <div className="px-4 py-6 space-y-3">
-          <h2 className="text-lg font-semibold text-white mb-4">Admin Dashboard</h2>
+      <aside className="hidden md:flex flex-col w-64 bg-gradient-to-b from-[#003B4C] to-[#005A6E] text-white fixed h-full z-30 shadow-2xl">
+        <div className="px-6 py-8 space-y-4">
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-white font-bold mb-2">Admin Dashboard</h2>
+            <div className="w-16 h-1 bg-gradient-to-r from-blue-400 to-blue-300 rounded-full"></div>
+          </div>
+          
           {adminSections.map(({ name, icon: Icon, badge }) => (
             <button
               key={name}
-              className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm transition font-medium ${
+              className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-300 font-medium w-full group ${
                 activeSection === name
-                  ? 'bg-white text-[#003B4C]'
-                  : 'text-white hover:bg-[#005A6E]'
+                  ? 'bg-gradient-to-r from-white to-blue-50 text-[#003B4C] shadow-lg transform scale-105'
+                  : 'text-white hover:bg-white/20 hover:text-white hover:shadow-md transform hover:scale-105 hover:-translate-y-0.5'
               }`}
               onClick={() => handleSectionChange(name)}
             >
-              <div className="flex items-center gap-2">
-                <Icon size={18} />
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg transition-all duration-300 ${
+                  activeSection === name 
+                    ? 'bg-[#003B4C]/20 text-[#003B4C]' 
+                    : 'bg-white/20 text-white group-hover:bg-white/30 group-hover:scale-110'
+                }`}>
+                  <Icon size={18} />
+                </div>
                 {name}
               </div>
               {badge && (
-                <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full shadow-md">
                   {badge}
                 </span>
               )}
@@ -165,11 +181,11 @@ const AdminDashboard = () => {
           ))}
           
           {/* Logout Button in Desktop Sidebar */}
-          <div className="pt-4 border-t border-[#005A6E]">
+          <div className="pt-6 border-t border-white/20">
             <LogoutButton 
               variant="outline" 
               size="sm"
-              className="w-full border-white text-white hover:bg-white hover:text-[#003B4C]"
+              className="w-full border-white/40 text-white hover:bg-white hover:text-[#003B4C] hover:border-white transition-all duration-300 transform hover:scale-105 hover:shadow-md rounded-xl"
             />
           </div>
         </div>
@@ -178,25 +194,30 @@ const AdminDashboard = () => {
       {/* Main Content Area */}
       <div className="flex-1 md:ml-64">
         {/* Header */}
-        <header className="bg-[#003B4C] text-white px-6 py-4 shadow flex justify-between items-center">
+        <header className="bg-gradient-to-r from-[#003B4C] to-[#005A6E] text-white px-6 py-6 shadow-lg flex justify-between items-center">
           {/* Mobile Menu Button */}
           <button
             onClick={toggleSidebar}
-            className="md:hidden p-2 hover:bg-[#005A6E] rounded-md transition-colors"
+            className="md:hidden p-2 hover:bg-white/20 rounded-xl transition-all duration-300 transform hover:scale-110"
           >
             <Menu size={20} className="text-white" />
           </button>
           
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold">Admin Dashboard</h1>
-            <div className="text-sm opacity-90">Welcome, Admin</div>
+          <div className="flex items-center gap-6">
+            <div>
+              <h1 className="text-xl font-bold text-white mb-1">Admin Dashboard</h1>
+              <div className="w-12 h-1 bg-gradient-to-r from-blue-400 to-blue-300 rounded-full"></div>
+            </div>
+            <div className="text-sm text-white/90 font-medium px-4 py-2 bg-white/10 rounded-lg backdrop-blur-sm">
+              Welcome, Admin
+            </div>
           </div>
           
           {/* Logout Button */}
           <LogoutButton 
             variant="outline" 
             size="sm"
-            className="border-white text-white hover:bg-white hover:text-[#003B4C]"
+            className="border-white/60 text-white hover:bg-white hover:text-[#003B4C] hover:border-white transition-all duration-300 transform hover:scale-105 hover:shadow-md rounded-xl"
           />
         </header>
 

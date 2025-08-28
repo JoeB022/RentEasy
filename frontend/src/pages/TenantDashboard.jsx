@@ -161,75 +161,91 @@ const TenantDashboard = () => {
 
       {/* Mobile Sidebar */}
       <aside className={`
-        fixed top-0 left-0 h-full w-64 bg-primary-500 text-white z-50 transform transition-transform duration-300 ease-in-out
+        fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-[#003B4C] to-[#005A6E] text-white z-50 transform transition-all duration-500 ease-in-out shadow-2xl
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:hidden
       `}>
-        <div className="flex items-center justify-between p-4 border-b border-primary-400">
-          <Typography.Heading level={4} className="text-white">Menu</Typography.Heading>
+        <div className="flex items-center justify-between p-6 border-b border-white/20 bg-white/10 backdrop-blur-sm">
+          <Typography.Heading level={4} className="text-white font-bold">Menu</Typography.Heading>
           <button
             onClick={closeSidebar}
-            className="p-2 hover:bg-primary-400 rounded-md transition-colors"
+            className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300 transform hover:scale-110"
           >
             <X size={20} className="text-white" />
           </button>
         </div>
-        <div className="px-4 py-6 space-y-3">
+        <div className="px-6 py-8 space-y-4">
           {tabs.map(({ label, value, icon: Icon }) => (
             <button
               key={value}
               onClick={() => handleTabChange(value)}
-              className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm transition font-medium w-full ${
+              className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-300 font-medium w-full group ${
                 activeTab === value
-                  ? 'bg-white text-primary-500'
-                  : 'text-white hover:bg-white hover:text-primary-500'
+                  ? 'bg-gradient-to-r from-white to-blue-50 text-[#003B4C] shadow-lg transform scale-105'
+                  : 'text-white hover:bg-white/20 hover:text-white hover:shadow-md transform hover:scale-105 hover:-translate-y-0.5'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <Icon size={18} />
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg transition-all duration-300 ${
+                  activeTab === value 
+                    ? 'bg-[#003B4C]/20 text-[#003B4C]' 
+                    : 'bg-white/20 text-white group-hover:bg-white/30 group-hover:scale-110'
+                }`}>
+                  <Icon size={18} />
+                </div>
                 {label}
               </div>
             </button>
           ))}
           
           {/* Logout Button in Mobile Sidebar */}
-          <div className="pt-4 border-t border-primary-400">
+          <div className="pt-6 border-t border-white/20">
             <LogoutButton 
               variant="outline" 
               size="sm"
-              className="w-full border-white text-white hover:bg-white hover:text-primary-500"
+              className="w-full border-white/40 text-white hover:bg-white hover:text-[#003B4C] hover:border-white transition-all duration-300 transform hover:scale-105 hover:shadow-md rounded-xl"
             />
           </div>
         </div>
       </aside>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-primary-500 text-white fixed h-full z-30 shadow-lg">
-        <div className="px-4 py-6 space-y-3">
-          <Typography.Heading level={4} className="text-white mb-4">Tenant Dashboard</Typography.Heading>
+      <aside className="hidden md:flex flex-col w-64 bg-gradient-to-b from-[#003B4C] to-[#005A6E] text-white fixed h-full z-30 shadow-2xl">
+        <div className="px-6 py-8 space-y-4">
+          <div className="mb-8">
+            <Typography.Heading level={4} className="text-white font-bold mb-2">Tenant Dashboard</Typography.Heading>
+            <div className="w-16 h-1 bg-gradient-to-r from-blue-400 to-blue-300 rounded-full"></div>
+          </div>
+          
           {tabs.map(({ label, value, icon: Icon }) => (
             <button
               key={value}
               onClick={() => handleTabChange(value)}
-              className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm transition font-medium ${
+              className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-300 font-medium w-full group ${
                 activeTab === value
-                  ? 'bg-white text-primary-500'
-                  : 'text-white hover:bg-white hover:text-primary-500'
+                  ? 'bg-gradient-to-r from-white to-blue-50 text-[#003B4C] shadow-lg transform scale-105'
+                  : 'text-white hover:bg-white/20 hover:text-white hover:shadow-md transform hover:scale-105 hover:-translate-y-0.5'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <Icon size={18} />
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg transition-all duration-300 ${
+                  activeTab === value 
+                    ? 'bg-[#003B4C]/20 text-[#003B4C]' 
+                    : 'bg-white/20 text-white group-hover:bg-white/30 group-hover:scale-110'
+                }`}>
+                  <Icon size={18} />
+                </div>
                 {label}
               </div>
             </button>
           ))}
           
           {/* Logout Button in Desktop Sidebar */}
-          <div className="pt-4 border-t border-primary-400">
+          <div className="pt-6 border-t border-white/20">
             <LogoutButton 
               variant="outline" 
               size="sm"
-              className="w-full border-white text-white hover:bg-white hover:text-primary-500"
+              className="w-full border-white/40 text-white hover:bg-white hover:text-[#003B4C] hover:border-white transition-all duration-300 transform hover:scale-105 hover:shadow-md rounded-xl"
             />
           </div>
         </div>
@@ -238,18 +254,21 @@ const TenantDashboard = () => {
       {/* Main Content Area */}
       <div className="flex-1 md:ml-64">
         {/* Header */}
-        <header className="bg-primary-500 text-white px-6 py-4 shadow flex justify-between items-center">
+        <header className="bg-gradient-to-r from-[#003B4C] to-[#005A6E] text-white px-6 py-6 shadow-lg flex justify-between items-center">
           {/* Mobile Menu Button */}
           <button
             onClick={toggleSidebar}
-            className="md:hidden p-2 hover:bg-primary-400 rounded-md transition-colors"
+            className="md:hidden p-2 hover:bg-white/20 rounded-xl transition-all duration-300 transform hover:scale-110"
           >
             <Menu size={20} className="text-white" />
           </button>
           
-          <div className="flex items-center gap-4">
-            <Typography.Heading level={3} className="text-white">Tenant Dashboard</Typography.Heading>
-            <Typography.BodyText className="text-white opacity-90">
+          <div className="flex items-center gap-6">
+            <div>
+              <Typography.Heading level={3} className="text-white font-bold mb-1">Tenant Dashboard</Typography.Heading>
+              <div className="w-12 h-1 bg-gradient-to-r from-blue-400 to-blue-300 rounded-full"></div>
+            </div>
+            <Typography.BodyText className="text-white/90 font-medium px-4 py-2 bg-white/10 rounded-lg backdrop-blur-sm">
               Welcome, {getUsername() || 'Tenant'} ({getUserRole() || 'tenant'})
             </Typography.BodyText>
           </div>
@@ -258,7 +277,7 @@ const TenantDashboard = () => {
           <LogoutButton 
             variant="outline" 
             size="sm"
-            className="border-white text-white hover:bg-white hover:text-primary-500"
+            className="border-white/60 text-white hover:bg-white hover:text-[#003B4C] hover:border-white transition-all duration-300 transform hover:scale-105 hover:shadow-md rounded-xl"
           />
         </header>
 

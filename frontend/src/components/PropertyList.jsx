@@ -229,7 +229,7 @@ const PropertyList = ({ onBook }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-[#f9fafb] to-[#e5e7eb]">
       {/* Filters Component */}
       <Filters
         searchQuery={searchQuery}
@@ -240,34 +240,44 @@ const PropertyList = ({ onBook }) => {
       />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-6">
-          <Typography.Heading level={2} className="text-secondary-900 mb-2">
-            Property Listings
-          </Typography.Heading>
-          <Typography.BodyText variant="muted" className="text-base">
+        <div className="mb-8">
+          <div className="mb-4">
+            <Typography.Heading level={2} className="text-3xl font-bold text-[#003B4C] mb-2">
+              Property Listings
+            </Typography.Heading>
+            <div className="w-20 h-1 bg-gradient-to-r from-[#007C99] to-[#0099B3] rounded-full"></div>
+          </div>
+          <Typography.BodyText variant="muted" className="text-lg text-[#007C99] font-medium">
             Discover your perfect home from our curated collection of properties
           </Typography.BodyText>
         </div>
 
         {/* Results Count */}
-        <div className="mb-6 flex items-center justify-between">
-          <Typography.BodyText variant="muted">
-            Showing {filtered.length} of {properties.length} properties
-          </Typography.BodyText>
-          
-          {/* Refresh Button */}
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors duration-200"
-          >
-            <svg className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
+        <div className="bg-gradient-to-r from-white to-[#f8fafc] p-6 rounded-2xl shadow-lg border border-white/50 mb-8 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#007C99] to-[#0099B3] rounded-lg flex items-center justify-center">
+                <span className="text-white text-sm">🏠</span>
+              </div>
+              <Typography.BodyText variant="muted" className="text-[#003B4C] font-medium">
+                Showing <span className="font-bold text-[#007C99]">{filtered.length}</span> of <span className="font-bold text-[#007C99]">{properties.length}</span> properties
+              </Typography.BodyText>
+            </div>
+            
+            {/* Refresh Button */}
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#007C99] to-[#0099B3] text-white rounded-xl font-medium hover:from-[#0088A3] hover:to-[#00A6C0] transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              <svg className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
         </div>
 
         {/* Property Grid */}
@@ -280,22 +290,22 @@ const PropertyList = ({ onBook }) => {
           </div>
         ) : filtered.length === 0 ? (
           // No results found
-          <div className="text-center py-12">
+          <div className="text-center py-16">
             <div className="max-w-md mx-auto">
-              <div className="text-gray-400 mb-4">
-                <svg className="h-16 w-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-24 h-24 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full mx-auto mb-6 flex items-center justify-center">
+                <svg className="h-12 w-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
-              <Typography.Heading level={4} className="text-gray-600 mb-2">
+              <Typography.Heading level={4} className="text-xl font-semibold text-[#003B4C] mb-3">
                 No properties found
               </Typography.Heading>
-              <Typography.BodyText variant="muted" className="mb-4">
+              <Typography.BodyText variant="muted" className="text-[#007C99] mb-6">
                 Try adjusting your search criteria or filters
               </Typography.BodyText>
               <button
                 onClick={handleClearFilters}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200"
+                className="bg-gradient-to-r from-[#003B4C] to-[#005A6E] text-white px-6 py-3 rounded-xl font-medium hover:from-[#004A5F] hover:to-[#006B8A] transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
               >
                 Clear All Filters
               </button>

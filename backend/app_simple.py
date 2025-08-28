@@ -561,57 +561,59 @@ def create_app():
         
         return permissions.get(role, [])
 
-    # Flask CLI Commands
-    @app.cli.command("create-admin")
-    @click.option("--email", required=True, help="Admin email address")
-    @click.option("--password", required=True, help="Admin password")
-    @click.option("--username", help="Admin username (optional, defaults to email)")
-    def create_admin(email, password, username=None):
-        """Create an admin user securely through CLI."""
-        try:
-            # Set default username if not provided
-            if not username:
-                username = email.split('@')[0]
-            
-            # Check if user already exists
-            existing_user = User.query.filter_by(email=email).first()
-            if existing_user:
-                if existing_user.role == 'admin':
-                    click.echo(f"⚠️  Warning: Admin user with email '{email}' already exists.")
-                    return
-                else:
-                    click.echo(f"⚠️  Warning: User with email '{email}' already exists with role '{existing_user.role}'.")
-                    click.echo("   To promote to admin, you'll need to update the database manually.")
-                    return
-            
-            # Hash password
-            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-            
-            # Create admin user
-            admin_user = User(
-                username=username,
-                email=email.lower(),
-                password=hashed_password,
-                role='admin'
-            )
-            
-            # Save to database
-            db.session.add(admin_user)
-            db.session.commit()
-            
-            click.echo(f"✅ Admin user created successfully!")
-            click.echo(f"   Email: {email}")
-            click.echo(f"   Username: {username}")
-            click.echo(f"   Role: admin")
-            click.echo(f"   ID: {admin_user.id}")
-            
-        except Exception as e:
-            db.session.rollback()
-            click.echo(f"❌ Failed to create admin user: {str(e)}")
-            raise click.Abort()
-
     return app
 
+# Create the app instance for CLI commands
+app = create_app()
+
+# Register CLI commands with the app instance
+@app.cli.command("create-admin")
+@click.option("--email", required=True, help="Admin email address")
+@click.option("--password", required=True, help="Admin password")
+@click.option("--username", help="Admin username (optional, defaults to email)")
+def create_admin(email, password, username=None):
+    """Create an admin user securely through CLI."""
+    try:
+        # Set default username if not provided
+        if not username:
+            username = email.split('@')[0]
+        
+        # Check if user already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            if existing_user.role == 'admin':
+                click.echo(f"⚠️  Warning: Admin user with email '{email}' already exists.")
+                return
+            else:
+                click.echo(f"⚠️  Warning: User with email '{email}' already exists with role '{existing_user.role}'.")
+                click.echo("   To promote to admin, you'll need to update the database manually.")
+                return
+        
+        # Hash password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        # Create admin user
+        admin_user = User(
+            username=username,
+            email=email.lower(),
+            password=hashed_password,
+            role='admin'
+        )
+        
+        # Save to database
+        db.session.add(admin_user)
+        db.session.commit()
+        
+        click.echo(f"✅ Admin user created successfully!")
+        click.echo(f"   Email: {email}")
+        click.echo(f"   Username: {username}")
+        click.echo(f"   Role: admin")
+        click.echo(f"   ID: {admin_user.id}")
+        
+    except Exception as e:
+        db.session.rollback()
+        click.echo(f"❌ Failed to create admin user: {str(e)}")
+        raise click.Abort()
+
 if __name__ == "__main__":
-    app = create_app()
     app.run(debug=True, host="0.0.0.0", port=8000)

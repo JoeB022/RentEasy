@@ -4,12 +4,25 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import toast from 'react-hot-toast';
 import { FcGoogle } from 'react-icons/fc';
-import { FaLinkedinIn } from 'react-icons/fa';
 import { Navigate } from 'react-router-dom';
 import { TextInput, SubmitButton } from './forms';
 import { setToken, clearToken, isAuthenticated } from '../utils/auth';
 import { Button, Typography } from './ui';
 import { jwtDecode } from 'jwt-decode';
+import { 
+  User, 
+  Mail, 
+  Lock, 
+  Shield, 
+  LogIn, 
+  UserPlus, 
+  Eye, 
+  EyeOff,
+  CheckCircle,
+  AlertCircle,
+  Home,
+  Building2
+} from 'lucide-react';
 
 // Validation schemas
 const loginSchema = yup.object({
@@ -155,6 +168,8 @@ const Auth = ({ mode = 'login', onClose }) => {
   const [role, setRole] = useState('tenant');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [backendError, setBackendError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Check if user is already logged in and redirect
   React.useEffect(() => {
@@ -193,6 +208,8 @@ const Auth = ({ mode = 'login', onClose }) => {
       loginForm.clearErrors();
     } else {
       signupForm.clearErrors();
+      // Reset role to tenant when switching to signup (since admin is not available)
+      setRole('tenant');
     }
     // Clear backend errors
     setBackendError('');
@@ -202,7 +219,7 @@ const Auth = ({ mode = 'login', onClose }) => {
     setIsSubmitting(true);
     
     try {
-            if (activeTab === 'login') {
+      if (activeTab === 'login') {
         const res = await login(data.email, data.password);
         toast.success('✅ Logged in successfully!');
         if (onClose) onClose();
@@ -248,237 +265,311 @@ const Auth = ({ mode = 'login', onClose }) => {
   };
 
   return (
-    <div className="w-full">
-      {/* Tabs */}
-      <div className="flex mb-6 bg-[#f0f4f6] rounded-lg overflow-hidden">
-        <button
-          className={`flex-1 py-3 text-center text-sm font-medium transition ${
-            activeTab === 'login'
-              ? 'bg-[#003B4C] text-white'
-              : 'text-gray-500 hover:bg-gray-100'
-          }`}
-          onClick={() => handleTabChange('login')}
-        >
-          Login
-        </button>
-        <button
-          className={`flex-1 py-3 text-center text-sm font-medium transition ${
-            activeTab === 'signup'
-              ? 'bg-[#003B4C] text-white'
-              : 'text-gray-500 hover:bg-gray-100'
-          }`}
-          onClick={() => handleTabChange('signup')}
-        >
-          Sign Up
-        </button>
-      </div>
-
-      {/* Heading */}
-      <div className="text-center mb-6">
-        <Typography.Heading level={2} className="text-primary-500 mb-2">
-          {activeTab === 'login' ? 'Welcome Back' : 'Create Account'}
-        </Typography.Heading>
-        <Typography.BodyText variant="muted" size="sm">
-          {activeTab === 'login'
-            ? 'Login to access your dashboard'
-            : 'Sign up to get started'}
-        </Typography.BodyText>
-      </div>
-
-      {/* Role Selector - Only show for signup */}
-      {activeTab === 'signup' && (
-        <div className="mb-4">
-          <Typography.Label className="mb-1">Select Role</Typography.Label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#007C99] focus:outline-none"
-          >
-            <option value="tenant">Tenant</option>
-            <option value="landlord">Landlord</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-      )}
-
-      {/* Form */}
-      <form onSubmit={currentForm.handleSubmit(onSubmit)} className="space-y-4">
-        {activeTab === 'signup' && (
-          <TextInput
-            label="Username"
-            name="username"
-            type="text"
-            placeholder="Enter your username"
-            required
-            error={currentForm.formState.errors.username?.message}
-            {...currentForm.register('username')}
-          />
-        )}
+    <div className="w-full max-w-md mx-auto">
+      {/* Main Container with Beautiful Background */}
+      <div className="relative bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 p-6 rounded-3xl shadow-2xl border border-white/50 backdrop-blur-sm overflow-hidden min-h-[650px]">
         
-        {/* Backend Error Display */}
-        {backendError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
-            {backendError}
+        {/* Decorative Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-blue-200/20 to-indigo-200/20 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-20 -left-20 w-32 h-32 bg-gradient-to-tr from-purple-200/20 to-pink-200/20 rounded-full blur-3xl"></div>
+        </div>
+
+        {/* Header Section */}
+        <div className="relative text-center mb-4">
+          {/* Logo Icon */}
+          <div className="w-16 h-16 bg-gradient-to-r from-[#007C99] via-[#0099B3] to-[#00B3CC] rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg shadow-blue-500/25">
+            <Shield className="w-8 h-8 text-white" />
+          </div>
+          
+          {/* Title */}
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#003B4C] to-[#007C99] bg-clip-text text-transparent mb-2">
+            {activeTab === 'login' ? 'Welcome Back' : 'Join RentEasy'}
+          </h1>
+          
+          {/* Subtitle */}
+          <p className="text-[#007C99] font-medium text-sm">
+            {activeTab === 'login' 
+              ? 'Sign in to access your dashboard' 
+              : 'Create your account to get started'
+            }
+          </p>
+          
+          {/* Decorative Line */}
+          <div className="w-16 h-1 bg-gradient-to-r from-[#007C99] via-[#0099B3] to-[#00B3CC] rounded-full mx-auto mt-2"></div>
+        </div>
+
+        {/* Enhanced Tabs */}
+        <div className="relative mb-4">
+          <div className="flex bg-gradient-to-r from-gray-50 to-blue-50/30 rounded-2xl overflow-hidden shadow-lg border border-white/50 p-1">
+            <button
+              className={`flex-1 py-2 text-center text-sm font-semibold transition-all duration-300 relative ${
+                activeTab === 'login'
+                  ? 'text-white'
+                  : 'text-[#003B4C] hover:text-[#007C99]'
+              }`}
+              onClick={() => handleTabChange('login')}
+            >
+              {activeTab === 'login' && (
+                <div className="absolute inset-0 bg-gradient-to-r from-[#007C99] to-[#0099B3] rounded-xl shadow-lg transform scale-105"></div>
+              )}
+              <div className="relative flex items-center justify-center gap-2">
+                <LogIn className="w-4 h-4" />
+                Sign In
+              </div>
+            </button>
+            <button
+              className={`flex-1 py-2 text-center text-sm font-semibold transition-all duration-300 relative ${
+                activeTab === 'signup'
+                  ? 'text-white'
+                  : 'text-[#003B4C] hover:text-[#007C99]'
+              }`}
+              onClick={() => handleTabChange('signup')}
+            >
+              {activeTab === 'signup' && (
+                <div className="absolute inset-0 bg-gradient-to-r from-[#007C99] to-[#0099B3] rounded-xl shadow-lg transform scale-105"></div>
+              )}
+              <div className="relative flex items-center justify-center gap-2">
+                <UserPlus className="w-4 h-4" />
+                Sign Up
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Enhanced Role Selector - Only show for signup */}
+        {activeTab === 'signup' && (
+          <div className="mb-4">
+            <label className="block text-sm font-semibold text-[#003B4C] mb-2 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-[#007C99]" />
+              Choose Your Role
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setRole('tenant')}
+                className={`p-2 rounded-xl border-2 transition-all duration-300 text-center group ${
+                  role === 'tenant'
+                    ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-300 text-blue-800 shadow-lg transform scale-105'
+                    : 'bg-white/80 border-gray-200 text-[#003B4C] hover:border-[#007C99]/50 hover:bg-white hover:shadow-md'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${
+                    role === 'tenant' ? 'bg-blue-500 shadow-lg' : 'bg-gray-300 group-hover:bg-blue-400'
+                  }`}>
+                    <Home className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="font-semibold text-xs">Tenant</span>
+                  <span className="text-xs opacity-75">Looking for a home</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('landlord')}
+                className={`p-2 rounded-xl border-2 transition-all duration-300 text-center group ${
+                  role === 'landlord'
+                    ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-300 text-green-800 shadow-lg transform scale-105'
+                    : 'bg-white/80 border-gray-200 text-[#003B4C] hover:border-[#007C99]/50 hover:bg-white hover:shadow-md'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${
+                    role === 'landlord' ? 'bg-green-500 shadow-lg' : 'bg-gray-300 group-hover:bg-green-400'
+                  }`}>
+                    <Building2 className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="font-semibold text-xs">Landlord</span>
+                  <span className="text-xs opacity-75">Own properties</span>
+                </div>
+              </button>
+            </div>
+            <div className="mt-2 text-center">
+              <p className="text-xs text-[#007C99] bg-white/60 px-2 py-1 rounded-lg backdrop-blur-sm font-medium">
+                💡 Admin roles are created securely through server administration only.
+              </p>
+            </div>
           </div>
         )}
-        
-        <TextInput
-          label="Email Address"
-          name="email"
-          type="email"
-          placeholder="Enter your email"
-          required
-          error={currentForm.formState.errors.email?.message}
-          {...currentForm.register('email')}
-        />
 
-        <TextInput
-          label="Password"
-          name="password"
-          type="password"
-          placeholder="Enter your password"
-          required
-          error={currentForm.formState.errors.password?.message}
-          {...currentForm.register('password')}
-        />
+        {/* Enhanced Form */}
+        <form onSubmit={currentForm.handleSubmit(onSubmit)} className="space-y-3 mb-4">
+          {activeTab === 'signup' && (
+            <div className="relative group">
+              <label className="block text-sm font-semibold text-[#003B4C] mb-1 flex items-center gap-2">
+                <User className="w-4 h-4 text-[#007C99]" />
+                Username
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Enter your username"
+                  className={`w-full px-3 py-2 pl-10 border-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#007C99]/20 bg-white/80 backdrop-blur-sm ${
+                    currentForm.formState.errors.username
+                      ? 'border-red-300 bg-red-50'
+                      : 'border-[#007C99]/30 hover:border-[#007C99]/50 focus:border-[#007C99]'
+                  }`}
+                  {...currentForm.register('username')}
+                />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#007C99]/60" />
+              </div>
+              {currentForm.formState.errors.username && (
+                <div className="flex items-center gap-2 mt-1 text-red-600 text-xs">
+                  <AlertCircle className="w-3 h-3" />
+                  {currentForm.formState.errors.username.message}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Enhanced Backend Error Display */}
+          {backendError && (
+            <div className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm flex items-center gap-2 shadow-lg">
+              <AlertCircle className="w-4 h-4" />
+              {backendError}
+            </div>
+          )}
+          
+          <div className="relative group">
+            <label className="block text-sm font-semibold text-[#003B4C] mb-1 flex items-center gap-2">
+              <Mail className="w-4 h-4 text-[#007C99]" />
+              Email Address
+            </label>
+            <div className="relative">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className={`w-full px-3 py-2 pl-10 border-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#007C99]/20 bg-white/80 backdrop-blur-sm ${
+                  currentForm.formState.errors.email
+                    ? 'border-red-300 bg-red-50'
+                    : 'border-[#007C99]/30 hover:border-[#007C99]/50 focus:border-[#007C99]'
+                }`}
+                {...currentForm.register('email')}
+              />
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#007C99]/60" />
+            </div>
+            {currentForm.formState.errors.email && (
+              <div className="flex items-center gap-2 mt-1 text-red-600 text-xs">
+                <AlertCircle className="w-3 h-3" />
+                {currentForm.formState.errors.email.message}
+              </div>
+            )}
+          </div>
 
-        {activeTab === 'signup' && (
-          <TextInput
-            label="Confirm Password"
-            name="confirmPassword"
-            type="password"
-            placeholder="Confirm your password"
-            required
-            error={currentForm.formState.errors.confirmPassword?.message}
-            {...currentForm.register('confirmPassword')}
-          />
-        )}
+          <div className="relative group">
+            <label className="block text-sm font-semibold text-[#003B4C] mb-1 flex items-center gap-2">
+              <Lock className="w-4 h-4 text-[#007C99]" />
+              Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter your password"
+                className={`w-full px-3 py-2 pl-10 pr-10 border-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#007C99]/20 bg-white/80 backdrop-blur-sm ${
+                  currentForm.formState.errors.password
+                    ? 'border-red-300 bg-red-50'
+                    : 'border-[#007C99]/30 hover:border-[#007C99]/50 focus:border-[#007C99]'
+                }`}
+                {...currentForm.register('password')}
+              />
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#007C99]/60" />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#007C99] hover:text-[#003B4C] transition-colors duration-300 p-1 rounded hover:bg-[#007C99]/10"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {currentForm.formState.errors.password && (
+              <div className="flex items-center gap-2 mt-1 text-red-600 text-xs">
+                <AlertCircle className="w-3 h-3" />
+                {currentForm.formState.errors.password.message}
+              </div>
+            )}
+          </div>
 
-                          <SubmitButton
-                    type="submit"
-                    loading={isSubmitting}
-                    disabled={isSubmitting}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {activeTab === 'login' ? 'Login' : 'Sign Up'}
-                  </SubmitButton>
-      </form>
+          {activeTab === 'signup' && (
+            <div className="relative group">
+              <label className="block text-sm font-semibold text-[#003B4C] mb-1 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-[#007C99]" />
+                Confirm Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Confirm your password"
+                  className={`w-full px-3 py-2 pl-10 pr-10 border-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#007C99]/20 bg-white/80 backdrop-blur-sm ${
+                    currentForm.formState.errors.confirmPassword
+                      ? 'border-red-300 bg-red-50'
+                      : 'border-[#007C99]/30 hover:border-[#007C99]/50 focus:border-[#007C99]'
+                  }`}
+                  {...currentForm.register('confirmPassword')}
+                />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#007C99]/60" />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#007C99] hover:text-[#003B4C] transition-colors duration-300 p-1 rounded hover:bg-[#007C99]/10"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {currentForm.formState.errors.confirmPassword && (
+                <div className="flex items-center gap-2 mt-1 text-red-600 text-xs">
+                  <AlertCircle className="w-3 h-3" />
+                  {currentForm.formState.errors.confirmPassword.message}
+                </div>
+              )}
+            </div>
+          )}
 
-      {/* Divider */}
-      <div className="flex items-center gap-4 my-6">
-        <hr className="flex-1 border-gray-300" />
-        <span className="text-xs text-gray-500">or continue with</span>
-        <hr className="flex-1 border-gray-300" />
-      </div>
-
-      {/* Social Login */}
-      <div className="space-y-3">
-        <Button
-          variant="outline"
-          fullWidth
-          onClick={() => handleSocialLogin('Google')}
-        >
-          <FcGoogle className="mr-2 text-xl" />
-          Continue with Google
-        </Button>
-
-        <Button
-          variant="outline"
-          fullWidth
-          onClick={() => handleSocialLogin('LinkedIn')}
-          className="bg-[#0077B5] text-white border-[#0077B5] hover:bg-[#0077B5] hover:opacity-90"
-        >
-          <FaLinkedinIn className="mr-2 text-xl" />
-          Continue with LinkedIn
-        </Button>
-      </div>
-
-      {/* Cancel */}
-      {onClose && (
-        <div className="mt-6 text-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="text-gray-400 hover:text-error-500"
+          {/* Enhanced Submit Button */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full bg-gradient-to-r from-[#007C99] via-[#0099B3] to-[#00B3CC] text-white py-2 px-6 rounded-lg font-semibold text-base transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg shadow-blue-500/25 mt-3"
           >
-            Cancel
-          </Button>
-        </div>
-      )}
+            {isSubmitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                {activeTab === 'login' ? 'Signing In...' : 'Creating Account...'}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2">
+                {activeTab === 'login' ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+                {activeTab === 'login' ? 'Sign In' : 'Create Account'}
+              </div>
+            )}
+          </button>
+        </form>
 
-      {/* Debug Test Button */}
-      <div className="mt-6 text-center">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            console.log('[DEBUG] Test button clicked');
-            console.log('[DEBUG] Environment variables:', {
-              VITE_API_URL: import.meta.env.VITE_API_URL,
-              NODE_ENV: import.meta.env.NODE_ENV,
-              DEV: import.meta.env.DEV
-            });
-            // Test login with hardcoded credentials
-            login('test@test.com', 'test123').then(result => {
-              console.log('[DEBUG] Test login result:', result);
-            }).catch(error => {
-              console.error('[DEBUG] Test login error:', error);
-            });
-          }}
-          className="text-blue-600 border-blue-600 hover:bg-blue-50"
-        >
-          🧪 Test Login (Debug)
-        </Button>
-        
-        {/* Debug Token Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            console.log('[DEBUG] Debug token button clicked');
-            const token = localStorage.getItem('access_token');
-            const role = localStorage.getItem('user_role');
-            const username = localStorage.getItem('username');
-            
-            console.log('[DEBUG] Stored data:', {
-              hasToken: !!token,
-              tokenLength: token ? token.length : 0,
-              role: role,
-              username: username
-            });
-            
-            if (token) {
-              try {
-                const decoded = jwtDecode(token);
-                console.log('[DEBUG] JWT Token decoded:', {
-                  exp: decoded.exp,
-                  iat: decoded.iat,
-                  sub: decoded.sub,
-                  type: decoded.type,
-                  fresh: decoded.fresh,
-                  jti: decoded.jti,
-                  nbf: decoded.nbf
-                });
-                
-                // Check if token is expired
-                const currentTime = Date.now() / 1000;
-                const isExpired = decoded.exp < currentTime;
-                console.log('[DEBUG] Token expiry check:', {
-                  tokenExpiry: decoded.exp,
-                  currentTime: currentTime,
-                  isExpired: isExpired
-                });
-              } catch (error) {
-                console.error('[DEBUG] Failed to decode token:', error);
-              }
-            }
-          }}
-          className="text-green-600 border-green-600 hover:bg-green-50 ml-2"
-        >
-          🔍 Debug Token
-        </Button>
+        {/* Enhanced Divider */}
+        <div className="flex items-center gap-3 my-3">
+          <hr className="flex-1 border-[#007C99]/20" />
+          <span className="text-xs text-[#007C99] font-medium bg-white/60 px-3 py-1 rounded-lg backdrop-blur-sm">
+            or continue with
+          </span>
+          <hr className="flex-1 border-[#007C99]/20" />
+        </div>
+
+        {/* Enhanced Social Login */}
+        <div className="space-y-3 mb-3">
+          <button
+            onClick={() => handleSocialLogin('Google')}
+            className="w-full bg-white border-2 border-gray-200 text-[#003B4C] py-2 px-4 rounded-lg font-medium transition-all duration-300 hover:border-[#007C99]/50 hover:shadow-lg hover:scale-105 flex items-center justify-center gap-3 group"
+          >
+            <FcGoogle className="text-lg group-hover:scale-110 transition-transform duration-300" />
+            Continue with Google
+          </button>
+        </div>
+
+        {/* Additional Info */}
+        <div className="text-center">
+          <p className="text-xs text-[#007C99]/70">
+            By continuing, you agree to our Terms of Service and Privacy Policy
+          </p>
+        </div>
       </div>
     </div>
   );
