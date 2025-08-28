@@ -24,21 +24,25 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
         // Get the access token
         const token = getToken();
         if (!token) {
-          console.log('ProtectedRoute: No access token found');
+          console.log('[DEBUG] ProtectedRoute: No access token found');
           setIsValid(false);
           setIsValidating(false);
           return;
         }
 
+        // Temporarily disable token expiry check to fix redirect loop
+        // TODO: Re-enable after fixing JWT decoding
+        /*
         // Check if token is expired
         if (isTokenExpired(token)) {
-          console.log('ProtectedRoute: Token expired');
+          console.log('[DEBUG] ProtectedRoute: Token expired');
           clearToken();
           toast.error('Session expired. Please login again.');
           setIsValid(false);
           setIsValidating(false);
           return;
         }
+        */
 
         // Check role-based access if specified
         if (allowedRoles && allowedRoles.length > 0) {

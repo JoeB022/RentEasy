@@ -407,6 +407,79 @@ const Auth = ({ mode = 'login', onClose }) => {
           </Button>
         </div>
       )}
+
+      {/* Debug Test Button */}
+      <div className="mt-6 text-center">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            console.log('[DEBUG] Test button clicked');
+            console.log('[DEBUG] Environment variables:', {
+              VITE_API_URL: import.meta.env.VITE_API_URL,
+              NODE_ENV: import.meta.env.NODE_ENV,
+              DEV: import.meta.env.DEV
+            });
+            // Test login with hardcoded credentials
+            login('test@test.com', 'test123').then(result => {
+              console.log('[DEBUG] Test login result:', result);
+            }).catch(error => {
+              console.error('[DEBUG] Test login error:', error);
+            });
+          }}
+          className="text-blue-600 border-blue-600 hover:bg-blue-50"
+        >
+          🧪 Test Login (Debug)
+        </Button>
+        
+        {/* Debug Token Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            console.log('[DEBUG] Debug token button clicked');
+            const token = localStorage.getItem('access_token');
+            const role = localStorage.getItem('user_role');
+            const username = localStorage.getItem('username');
+            
+            console.log('[DEBUG] Stored data:', {
+              hasToken: !!token,
+              tokenLength: token ? token.length : 0,
+              role: role,
+              username: username
+            });
+            
+            if (token) {
+              try {
+                const decoded = jwtDecode(token);
+                console.log('[DEBUG] JWT Token decoded:', {
+                  exp: decoded.exp,
+                  iat: decoded.iat,
+                  sub: decoded.sub,
+                  type: decoded.type,
+                  fresh: decoded.fresh,
+                  jti: decoded.jti,
+                  nbf: decoded.nbf
+                });
+                
+                // Check if token is expired
+                const currentTime = Date.now() / 1000;
+                const isExpired = decoded.exp < currentTime;
+                console.log('[DEBUG] Token expiry check:', {
+                  tokenExpiry: decoded.exp,
+                  currentTime: currentTime,
+                  isExpired: isExpired
+                });
+              } catch (error) {
+                console.error('[DEBUG] Failed to decode token:', error);
+              }
+            }
+          }}
+          className="text-green-600 border-green-600 hover:bg-green-50 ml-2"
+        >
+          🔍 Debug Token
+        </Button>
+      </div>
     </div>
   );
 };
