@@ -19,6 +19,7 @@ from datetime import datetime, timezone, timedelta
 import bcrypt
 import json
 import enum
+import click
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -48,6 +49,17 @@ class User(db.Model):
             self.role = 'tenant'
         if self.created_at is None:
             self.created_at = datetime.now(timezone.utc)
+    
+    @staticmethod
+    def is_valid_role(role):
+        """Check if the role is valid for public registration."""
+        valid_public_roles = ['tenant', 'landlord']
+        return role in valid_public_roles
+    
+    @staticmethod
+    def is_admin_role(role):
+        """Check if the role is admin (restricted)."""
+        return role == 'admin'
 
 def create_app():
     """Create Flask application."""
@@ -95,7 +107,15 @@ def create_app():
             password = data['password']
             role = data.get('role', 'tenant').lower()
             
-            # Validate role
+            # Validate role - prevent admin role assignment through public registration
+            if not User.is_valid_role(role):
+                return jsonify({
+                    'error': 'Invalid role for public registration',
+                    'message': 'Admin role cannot be assigned through public registration',
+                    'allowed_roles': ['tenant', 'landlord']
+                }), 403
+            
+            # Additional validation for role
             if role not in [r.value for r in UserRole]:
                 return jsonify({'error': f'Invalid role. Must be one of: {[r.value for r in UserRole]}'}), 400
             
@@ -540,6 +560,55 @@ def create_app():
         }
         
         return permissions.get(role, [])
+
+    # Flask CLI Commands
+    @app.cli.command("create-admin")
+    @click.option("--email", required=True, help="Admin email address")
+    @click.option("--password", required=True, help="Admin password")
+    @click.option("--username", help="Admin username (optional, defaults to email)")
+    def create_admin(email, password, username=None):
+        """Create an admin user securely through CLI."""
+        try:
+            # Set default username if not provided
+            if not username:
+                username = email.split('@')[0]
+            
+            # Check if user already exists
+            existing_user = User.query.filter_by(email=email).first()
+            if existing_user:
+                if existing_user.role == 'admin':
+                    click.echo(f"⚠️  Warning: Admin user with email '{email}' already exists.")
+                    return
+                else:
+                    click.echo(f"⚠️  Warning: User with email '{email}' already exists with role '{existing_user.role}'.")
+                    click.echo("   To promote to admin, you'll need to update the database manually.")
+                    return
+            
+            # Hash password
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            
+            # Create admin user
+            admin_user = User(
+                username=username,
+                email=email.lower(),
+                password=hashed_password,
+                role='admin'
+            )
+            
+            # Save to database
+            db.session.add(admin_user)
+            db.session.commit()
+            
+            click.echo(f"✅ Admin user created successfully!")
+            click.echo(f"   Email: {email}")
+            click.echo(f"   Username: {username}")
+            click.echo(f"   Role: admin")
+            click.echo(f"   ID: {admin_user.id}")
+            
+        except Exception as e:
+            db.session.rollback()
+            click.echo(f"❌ Failed to create admin user: {str(e)}")
+            raise click.Abort()
 
     return app
 
