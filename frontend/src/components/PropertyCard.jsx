@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Transition } from '@headlessui/react';
 import ResponsiveImage from './ResponsiveImage';
 import { Button, Typography } from './ui';
@@ -6,6 +6,96 @@ import { Button, Typography } from './ui';
 const PropertyCard = ({ property, onBook, currentImageIndex = 0, onImageChange }) => {
   const [isHovered, setIsHovered] = useState(false);
   const totalImages = property.images?.length || 1;
+
+  // Helper function to get amenity icon
+  const getAmenityIcon = (amenity) => {
+    const amenityLower = amenity.toLowerCase();
+    const iconMap = {
+      'wifi': '📶',
+      'parking': '🚗',
+      'balcony': '🏠',
+      'garden': '🌱',
+      'garage': '🏚️',
+      'pool': '🏊',
+      'gym': '💪',
+      'security': '🔒',
+      'furnished': '🪑',
+      'water': '💧',
+      'electricity': '⚡',
+      'air conditioning': '❄️',
+      'heating': '🔥',
+      'elevator': '🛗',
+      'doorman': '👨‍💼',
+      'laundry': '👕',
+      'storage': '📦',
+      'pet friendly': '🐕',
+      'smoking allowed': '🚬',
+      'no smoking': '🚭'
+    };
+    
+    // Try exact match first
+    if (iconMap[amenityLower]) {
+      return iconMap[amenityLower];
+    }
+    
+    // Try partial matches
+    for (const [key, icon] of Object.entries(iconMap)) {
+      if (amenityLower.includes(key) || key.includes(amenityLower)) {
+        return icon;
+      }
+    }
+    
+    // Default icon
+    return '✨';
+  };
+
+  // Helper function to format amenity name
+  const formatAmenityName = (amenity) => {
+    // Convert snake_case or kebab-case to Title Case
+    return amenity
+      .replace(/[-_]/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase())
+      .trim();
+  };
+
+  // Helper function to safely parse amenities from JSON string
+  const getAmenities = () => {
+    console.log('PropertyCard - Property data:', property);
+    console.log('PropertyCard - Amenities:', property.amenities);
+    console.log('PropertyCard - Amenities type:', typeof property.amenities);
+    
+    if (!property.amenities) return [];
+    
+    try {
+      // If it's already an array, return it
+      if (Array.isArray(property.amenities)) {
+        return property.amenities;
+      }
+      
+      // If it's a JSON string, parse it
+      if (typeof property.amenities === 'string') {
+        const parsed = JSON.parse(property.amenities);
+        return Array.isArray(parsed) ? parsed : [];
+      }
+      
+      return [];
+    } catch (error) {
+      console.warn('Failed to parse amenities:', error);
+      return [];
+    }
+  };
+
+  // Check if amenities are still loading (being parsed)
+  const [amenitiesLoading, setAmenitiesLoading] = useState(false);
+  
+  useEffect(() => {
+    if (property.amenities) {
+      setAmenitiesLoading(true);
+      // Simulate a brief loading state for better UX
+      const timer = setTimeout(() => setAmenitiesLoading(false), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [property.amenities]);
 
   const handlePrev = () => {
     if (onImageChange) {
@@ -136,6 +226,13 @@ const PropertyCard = ({ property, onBook, currentImageIndex = 0, onImageChange }
             📍 {property.location}
           </Typography.BodyText>
 
+          {/* Property Description */}
+          {property.description && (
+            <Typography.BodyText variant="muted" className="mb-3 text-sm text-gray-600 line-clamp-2">
+              {property.description}
+            </Typography.BodyText>
+          )}
+
           {/* Price */}
           <div className="mb-3">
             <Typography.Heading level={6} className="text-primary-600">
@@ -144,25 +241,72 @@ const PropertyCard = ({ property, onBook, currentImageIndex = 0, onImageChange }
           </div>
 
           {/* Amenities */}
-          {property.amenities && property.amenities.length > 0 && (
-            <div className="mb-4">
-              <div className="flex flex-wrap gap-1">
-                {property.amenities.slice(0, 3).map((amenity, index) => (
-                  <span
-                    key={index}
-                    className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-md"
-                  >
-                    {amenity}
-                  </span>
-                ))}
-                {property.amenities.length > 3 && (
-                  <span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-500 rounded-md">
-                    +{property.amenities.length - 3} more
-                  </span>
+          {(() => {
+            const amenities = getAmenities();
+            if (amenities.length === 0) return null;
+            
+            return (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2 group/header">
+                  <div className="w-4 h-4 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full flex items-center justify-center group-hover/header:scale-110 transition-transform duration-200">
+                    <span className="text-white text-xs">✨</span>
+                  </div>
+                  <Typography.BodyText variant="muted" className="text-xs font-medium text-gray-600 group-hover/header:text-primary-600 transition-colors duration-200">
+                    Amenities
+                  </Typography.BodyText>
+                </div>
+                {amenitiesLoading ? (
+                  // Loading skeleton
+                  <div className="flex flex-wrap gap-2">
+                    {[...Array(3)].map((_, index) => (
+                      <div
+                        key={index}
+                        className="w-20 h-7 bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg animate-pulse"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {amenities.slice(0, 4).map((amenity, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-primary-50 to-primary-100 text-primary-700 border border-primary-200 rounded-lg shadow-sm hover:shadow-md hover:shadow-primary-200/50 transition-all duration-200 hover:scale-105 animate-in slide-in-from-bottom-2 fade-in duration-300"
+                        style={{
+                          animationDelay: `${index * 100}ms`,
+                          animationFillMode: 'both'
+                        }}
+                      >
+                        {getAmenityIcon(amenity)}
+                        {formatAmenityName(amenity)}
+                      </span>
+                    ))}
+                    {amenities.length > 4 && (
+                      <div className="relative group">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 cursor-pointer">
+                          <span>➕</span>
+                          +{amenities.length - 4} more
+                        </span>
+                        
+                        {/* Tooltip */}
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-20">
+                          <div className="flex flex-wrap gap-1 max-w-xs">
+                            {amenities.slice(4).map((amenity, index) => (
+                              <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-800 rounded text-xs">
+                                {getAmenityIcon(amenity)}
+                                {formatAmenityName(amenity)}
+                              </span>
+                            ))}
+                          </div>
+                          {/* Arrow */}
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Action Button */}
           <Button

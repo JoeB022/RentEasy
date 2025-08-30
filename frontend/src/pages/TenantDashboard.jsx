@@ -10,6 +10,7 @@ import useAuthFetch from '../hooks/useAuthFetch';
 import { getUsername, getUserRole } from '../utils/auth';
 import { Typography } from '../components/ui';
 import { LogoutButton } from '../components/common';
+import toast from 'react-hot-toast';
 
 const TenantDashboard = () => {
   console.log('TenantDashboard: Component rendering');
@@ -100,26 +101,106 @@ const TenantDashboard = () => {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [sidebarOpen]);
 
-  const handleBookProperty = (property) => {
-    const today = new Date().toISOString().split('T')[0];
-    const rental = {
-      id: Date.now(),
-      property: `${property.name}, ${property.location}`,
-      from: today,
-      to: '2025-12-31',
-      amount: property.price * 12,
-      status: 'Ongoing',
-    };
-    const booking = {
-      id: Date.now(),
-      property: `${property.name}, ${property.location}`,
-      date: today,
-      status: 'Pending',
-    };
+  const handleBookProperty = async (property) => {
+    try {
+      // Check if user is authenticated
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        toast.error('❌ Please log in to book properties');
+        return;
+      }
 
-    setBookings(prev => [booking, ...prev]);
-    setRentalHistory(prev => [rental, ...prev]);
+      // Check if user role is tenant
+      const userRole = localStorage.getItem('user_role');
+      if (userRole !== 'tenant') {
+        toast.error('❌ Only tenants can book properties');
+        return;
+      }
+
+      console.log('Creating booking for property:', property.id);
+      console.log('Using token:', token ? 'Token exists' : 'No token');
+      console.log('User role:', userRole);
+
+      // Create booking through API
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          property_id: property.id,
+          message: `Interested in ${property.name}`
+        })
+      });
+
+      console.log('Response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Booking successful:', data);
+        toast.success('✅ Property booked successfully!');
+        
+        // Refresh bookings from API
+        fetchBookings();
+      } else {
+        const errorData = await response.json();
+        console.error('Booking failed:', errorData);
+        toast.error(`❌ ${errorData.error || 'Failed to book property'}`);
+      }
+    } catch (error) {
+      console.error('Error booking property:', error);
+      toast.error('❌ Failed to book property');
+    }
   };
+
+  const fetchBookings = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        console.log('No token found, skipping booking fetch');
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      console.log('Fetching bookings, response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Bookings data received:', data);
+        
+        // Transform API data to match the expected format
+        const transformedBookings = data.bookings.map(booking => ({
+          id: booking.id,
+          property: `${booking.property.name}, ${booking.property.location}`,
+          date: new Date(booking.created_at).toISOString().split('T')[0],
+          status: booking.status,
+          message: booking.message,
+          landlord_response: booking.landlord_response
+        }));
+        
+        console.log('Transformed bookings:', transformedBookings);
+        setBookings(transformedBookings);
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to fetch bookings:', errorData);
+      }
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+    }
+  };
+
+  // Fetch bookings when component mounts
+  useEffect(() => {
+    if (localStorage.getItem('access_token')) {
+      fetchBookings();
+    }
+  }, []);
 
   const renderContent = () => {
     switch (activeTab) {

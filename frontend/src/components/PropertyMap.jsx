@@ -21,13 +21,8 @@ const PropertyMap = ({
       const zoom = 15;
       const url = `https://www.openstreetmap.org/export/embed.html?bbox=${coordinates.lng - 0.01},${coordinates.lat - 0.01},${coordinates.lng + 0.01},${coordinates.lat + 0.01}&layer=mapnik&marker=${coordinates.lat},${coordinates.lng}`;
       setMapUrl(url);
-      
-      // Notify parent component of location change
-      if (onLocationChange) {
-        onLocationChange(coordinates.lat, coordinates.lng);
-      }
     }
-  }, [coordinates, onLocationChange]);
+  }, [coordinates.lat, coordinates.lng]);
 
   // Initialize coordinates from props
   useEffect(() => {

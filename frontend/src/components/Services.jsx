@@ -24,12 +24,33 @@ const Services = () => {
   ];
 
   useEffect(() => {
-    const saved = localStorage.getItem('serviceBookings');
-    if (saved) setBookingHistory(JSON.parse(saved));
+    const saved = localStorage.getItem('tenant_service_bookings');
+    console.log('Services: Loading from localStorage:', saved);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        console.log('Services: Parsed data:', parsed);
+        setBookingHistory(parsed);
+      } catch (error) {
+        console.error('Services: Error parsing localStorage data:', error);
+        // Clear corrupted data
+        localStorage.removeItem('tenant_service_bookings');
+        setBookingHistory([]);
+      }
+    } else {
+      console.log('Services: No saved data found in localStorage');
+    }
+    
+    // Cleanup function
+    return () => {
+      console.log('Services: Component unmounting, current state:', bookingHistory);
+    };
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('serviceBookings', JSON.stringify(bookingHistory));
+    console.log('Services: Saving to localStorage:', bookingHistory);
+    localStorage.setItem('tenant_service_bookings', JSON.stringify(bookingHistory));
+    console.log('Services: Data saved successfully');
   }, [bookingHistory]);
 
   const handleBookClick = (serviceId) => {
@@ -68,7 +89,10 @@ const Services = () => {
         time: selectedTime,
         status: 'Booked',
       };
-      setBookingHistory(prev => [...prev, booking]);
+      const updatedHistory = [...bookingHistory, booking];
+      console.log('Services: Adding new booking:', booking);
+      console.log('Services: Updated history:', updatedHistory);
+      setBookingHistory(updatedHistory);
       setBookedService(booking);
       toast.success(`Booked ${service.name} on ${selectedDate} at ${selectedTime}`);
     }
@@ -217,7 +241,7 @@ const Services = () => {
           
           {/* Status Filters */}
           <div className="bg-gradient-to-r from-white to-[#f8fafc] p-6 rounded-2xl shadow-lg border border-white/50 mb-8 backdrop-blur-sm">
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap items-center">
               {['All', 'Booked', 'Completed', 'Cancelled'].map((status) => (
                 <button
                   key={status}
@@ -225,12 +249,45 @@ const Services = () => {
                   className={`px-6 py-3 rounded-xl text-sm font-medium border-2 transition-all duration-300 transform hover:scale-105 hover:-translate-y-0.5 ${
                     statusFilter === status
                       ? 'bg-gradient-to-r from-[#003B4C] to-[#005A6E] text-white border-[#003B4C] shadow-lg'
-                      : 'text-[#003B4C] border-[#007C99] hover:bg-gradient-to-r hover:from-[#007C99]/10 hover:to-[#0099B3]/10 hover:border-[#007C99] hover:shadow-md'
+                      : 'text-[#003B4C] border-[#007C99] hover:bg-gradient-r hover:from-[#007C99]/10 hover:to-[#0099B3]/10 hover:border-[#007C99] hover:shadow-md'
                   }`}
                 >
                   {status}
                 </button>
               ))}
+              
+              {/* Debug Button - Remove this later */}
+              <button
+                onClick={() => {
+                  console.log('Services: Current bookingHistory state:', bookingHistory);
+                  console.log('Services: localStorage data:', localStorage.getItem('tenant_service_bookings'));
+                  console.log('Services: All localStorage keys:', Object.keys(localStorage));
+                }}
+                className="px-4 py-3 bg-gray-500 text-white rounded-xl text-sm font-medium hover:bg-gray-600 transition-all duration-300"
+              >
+                🐛 Debug
+              </button>
+              
+              {/* Reload Button */}
+              <button
+                onClick={() => {
+                  const saved = localStorage.getItem('tenant_service_bookings');
+                  if (saved) {
+                    try {
+                      const parsed = JSON.parse(saved);
+                      setBookingHistory(parsed);
+                      toast.success('Data reloaded from localStorage');
+                    } catch (error) {
+                      toast.error('Failed to reload data');
+                    }
+                  } else {
+                    toast.error('No saved data found');
+                  }
+                }}
+                className="px-4 py-3 bg-blue-500 text-white rounded-xl text-sm font-medium hover:bg-blue-600 transition-all duration-300"
+              >
+                🔄 Reload
+              </button>
             </div>
           </div>
 

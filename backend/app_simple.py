@@ -142,6 +142,43 @@ class Property(db.Model):
             longitude=float(data.get('longitude', 0)) if data.get('longitude') else None
         )
 
+# Booking Model
+class Booking(db.Model):
+    __tablename__ = 'bookings'
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    property_id = db.Column(db.Integer, db.ForeignKey('properties.id'), nullable=False)
+    status = db.Column(db.String(20), default='Pending', nullable=False)  # Pending, Approved, Rejected, Cancelled
+    message = db.Column(db.Text, nullable=True)  # Optional message from tenant
+    landlord_response = db.Column(db.Text, nullable=True)  # Response from landlord
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False)
+    
+    # Relationship to Property (for easy access to property details)
+    property = db.relationship('Property', backref='bookings')
+    
+    def __init__(self, **kwargs):
+        super(Booking, self).__init__(**kwargs)
+        if self.created_at is None:
+            self.created_at = datetime.now(timezone.utc)
+        if self.updated_at is None:
+            self.updated_at = datetime.now(timezone.utc)
+    
+    def to_dict(self):
+        """Convert booking to dictionary for JSON response."""
+        return {
+            'id': self.id,
+            'tenant_id': self.tenant_id,
+            'property_id': self.property_id,
+            'status': self.status,
+            'message': self.message,
+            'landlord_response': self.landlord_response,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'property': self.property.to_dict() if self.property else None
+        }
+
 def create_app():
     """Create Flask application."""
     app = Flask(__name__)
@@ -457,10 +494,18 @@ def create_app():
         """Create a new property (landlords only)."""
         try:
             current_user = get_jwt_identity()
-            user_data = json.loads(current_user)
+            print(f"[DEBUG] JWT Identity: {current_user}")
+            
+            try:
+                user_data = json.loads(current_user)
+                print(f"[DEBUG] Parsed user data: {user_data}")
+            except json.JSONDecodeError as e:
+                print(f"[DEBUG] JSON decode error: {e}")
+                return jsonify({'error': 'Invalid token format'}), 401
             
             # Check if user is a landlord
             if user_data.get('role') != 'landlord':
+                print(f"[DEBUG] User role check failed. Expected 'landlord', got: {user_data.get('role')}")
                 return jsonify({'error': 'Only landlords can create properties'}), 403
             
             if not request.is_json:
@@ -516,7 +561,14 @@ def create_app():
         """Update a property (landlord who owns it only)."""
         try:
             current_user = get_jwt_identity()
-            user_data = json.loads(current_user)
+            print(f"[DEBUG] Update Property - JWT Identity: {current_user}")
+            
+            try:
+                user_data = json.loads(current_user)
+                print(f"[DEBUG] Update Property - Parsed user data: {user_data}")
+            except json.JSONDecodeError as e:
+                print(f"[DEBUG] Update Property - JSON decode error: {e}")
+                return jsonify({'error': 'Invalid token format'}), 401
             
             property_obj = Property.query.get(property_id)
             
@@ -525,6 +577,7 @@ def create_app():
             
             # Check if user owns this property
             if property_obj.landlord_id != user_data['user_id']:
+                print(f"[DEBUG] Update Property - Ownership check failed. Property landlord_id: {property_obj.landlord_id}, User user_id: {user_data['user_id']}")
                 return jsonify({'error': 'You can only update your own properties'}), 403
             
             if not request.is_json:
@@ -634,6 +687,174 @@ def create_app():
         except Exception as e:
             print(f"Error getting landlord properties: {str(e)}")
             return jsonify({'error': 'Failed to retrieve landlord properties', 'details': str(e)}), 500
+
+    # Booking Routes
+    @app.route('/api/bookings', methods=['POST'])
+    @jwt_required()
+    def create_booking():
+        """Create a new booking (tenants only)."""
+        try:
+            current_user = get_jwt_identity()
+            print(f"[DEBUG] Create Booking - JWT Identity: {current_user}")
+            
+            try:
+                user_data = json.loads(current_user)
+                print(f"[DEBUG] Create Booking - Parsed user data: {user_data}")
+            except json.JSONDecodeError as e:
+                print(f"[DEBUG] Create Booking - JSON decode error: {e}")
+                return jsonify({'error': 'Invalid token format'}), 401
+            
+            # Check if user is a tenant
+            if user_data.get('role') != 'tenant':
+                print(f"[DEBUG] Create Booking - Role check failed. Expected 'tenant', got: {user_data.get('role')}")
+                return jsonify({'error': 'Only tenants can create bookings'}), 403
+            
+            if not request.is_json:
+                return jsonify({'error': 'Content-Type must be application/json'}), 400
+            
+            data = request.get_json()
+            
+            # Validate required fields
+            if not data.get('property_id'):
+                return jsonify({'error': 'Property ID is required'}), 400
+            
+            property_id = data['property_id']
+            property_obj = Property.query.get(property_id)
+            
+            if not property_obj:
+                return jsonify({'error': 'Property not found'}), 404
+            
+            if not property_obj.available:
+                return jsonify({'error': 'Property is not available for booking'}), 400
+            
+            # Check if tenant already has a pending or approved booking for this property
+            existing_booking = Booking.query.filter(
+                Booking.tenant_id == user_data['user_id'],
+                Booking.property_id == property_id,
+                Booking.status.in_(['Pending', 'Approved'])
+            ).first()
+            
+            if existing_booking:
+                return jsonify({'error': 'You already have a booking for this property'}), 400
+            
+            # Create new booking
+            new_booking = Booking(
+                tenant_id=user_data['user_id'],
+                property_id=property_id,
+                message=data.get('message', ''),
+                status='Pending'
+            )
+            
+            db.session.add(new_booking)
+            db.session.commit()
+            
+            print(f"Booking created by tenant {user_data['username']} for property {property_obj.name}")
+            
+            return jsonify({
+                'message': 'Booking created successfully',
+                'booking': new_booking.to_dict()
+            }), 201
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error creating booking: {str(e)}")
+            return jsonify({'error': 'Failed to create booking', 'details': str(e)}), 500
+
+    @app.route('/api/bookings', methods=['GET'])
+    @jwt_required()
+    def get_user_bookings():
+        """Get bookings for the authenticated user."""
+        try:
+            current_user = get_jwt_identity()
+            user_data = json.loads(current_user)
+            
+            user_id = user_data['user_id']
+            user_role = user_data.get('role')
+            
+            if user_role == 'tenant':
+                # Tenants see their own bookings
+                bookings = Booking.query.filter_by(tenant_id=user_id).order_by(Booking.created_at.desc()).all()
+            elif user_role == 'landlord':
+                # Landlords see bookings for their properties
+                property_ids = [p.id for p in Property.query.filter_by(landlord_id=user_id).all()]
+                bookings = Booking.query.filter(Booking.property_id.in_(property_ids)).order_by(Booking.created_at.desc()).all()
+            else:
+                return jsonify({'error': 'Invalid user role'}), 400
+            
+            bookings_data = [booking.to_dict() for booking in bookings]
+            
+            return jsonify({
+                'message': 'Bookings retrieved successfully',
+                'bookings': bookings_data,
+                'total': len(bookings_data)
+            }), 200
+            
+        except Exception as e:
+            print(f"Error getting bookings: {str(e)}")
+            return jsonify({'error': 'Failed to retrieve bookings', 'details': str(e)}), 500
+
+    @app.route('/api/bookings/<int:booking_id>', methods=['PUT'])
+    @jwt_required()
+    def update_booking(booking_id):
+        """Update a booking (landlords can approve/reject, tenants can cancel)."""
+        try:
+            current_user = get_jwt_identity()
+            user_data = json.loads(current_user)
+            
+            booking = Booking.query.get(booking_id)
+            if not booking:
+                return jsonify({'error': 'Booking not found'}), 404
+            
+            if not request.is_json:
+                return jsonify({'error': 'Content-Type must be application/json'}), 400
+            
+            data = request.get_json()
+            user_role = user_data.get('role')
+            
+            if user_role == 'landlord':
+                # Landlords can approve/reject bookings for their properties
+                property_obj = Property.query.get(booking.property_id)
+                if not property_obj or property_obj.landlord_id != user_data['user_id']:
+                    return jsonify({'error': 'You can only manage bookings for your own properties'}), 403
+                
+                new_status = data.get('status')
+                if new_status not in ['Approved', 'Rejected']:
+                    return jsonify({'error': 'Invalid status. Must be Approved or Rejected'}), 400
+                
+                booking.status = new_status
+                booking.landlord_response = data.get('response', '')
+                
+                if new_status == 'Approved':
+                    # Mark property as unavailable
+                    property_obj.available = False
+                
+            elif user_role == 'tenant':
+                # Tenants can approve, reject, or cancel their own bookings
+                if booking.tenant_id != user_data['user_id']:
+                    return jsonify({'error': 'You can only manage your own bookings'}), 403
+                
+                new_status = data.get('status')
+                if new_status in ['Approved', 'Rejected', 'Cancelled']:
+                    booking.status = new_status
+                else:
+                    return jsonify({'error': 'Invalid status. Must be Approved, Rejected, or Cancelled'}), 400
+            else:
+                return jsonify({'error': 'Invalid user role'}), 400
+            
+            booking.updated_at = datetime.now(timezone.utc)
+            db.session.commit()
+            
+            print(f"Booking {booking_id} updated to {booking.status} by {user_data['username']}")
+            
+            return jsonify({
+                'message': 'Booking updated successfully',
+                'booking': booking.to_dict()
+            }), 200
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error updating booking {booking_id}: {str(e)}")
+            return jsonify({'error': 'Failed to update booking', 'details': str(e)}), 500
 
     # Protected routes
     @app.route('/dashboard/tenant', methods=['GET'])

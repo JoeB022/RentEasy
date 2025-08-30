@@ -3,7 +3,7 @@ import { jwtDecode } from 'jwt-decode';
 // Token storage keys
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
-const USER_ROLE_KEY = 'role';
+const USER_ROLE_KEY = 'user_role';
 const USERNAME_KEY = 'username';
 
 // Check if token is expired
@@ -68,12 +68,14 @@ export const isAuthenticated = () => {
     role: role
   });
   
-  // Temporarily simplify: just check if token and role exist
-  // TODO: Fix JWT decoding and re-enable proper expiry check
-  const result = token && role;
+  // Check if both token and role exist and are not empty
+  const hasValidToken = token && token.trim() !== '';
+  const hasValidRole = role && role.trim() !== '';
+  
+  const result = hasValidToken && hasValidRole;
   
   console.log('[DEBUG] isAuthenticated result:', result);
-  return result;
+  return Boolean(result); // Ensure we return a boolean
 };
 
 // Refresh token function
@@ -85,18 +87,24 @@ export const refreshToken = async () => {
       throw new Error('No refresh token available');
     }
 
-    // TODO: Replace with actual backend refresh endpoint when ready
-    // For now, simulate a refresh with a delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Call the actual backend refresh endpoint
+    const response = await fetch('http://localhost:8000/auth/refresh', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${refreshTokenValue}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Token refresh failed');
+    }
+
+    const data = await response.json();
+    const newAccessToken = data.access_token;
     
-    // Simulate new token generation (replace with actual API call)
-    const newAccessToken = generateMockToken();
-    const newRefreshToken = generateMockToken();
-    
-    // Update tokens in storage
-    const role = getUserRole();
-    const username = getUsername();
-    setToken(newAccessToken, newRefreshToken, role, username);
+    // Update the access token in storage (keep the same refresh token)
+    localStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
     
     return newAccessToken;
   } catch (error) {
@@ -106,20 +114,7 @@ export const refreshToken = async () => {
   }
 };
 
-// Generate mock token for development (remove when backend is ready)
-const generateMockToken = () => {
-  // Create a mock JWT with 1 hour expiry
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const payload = btoa(JSON.stringify({
-    exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
-    iat: Math.floor(Date.now() / 1000),
-    username: getUsername() || 'user',
-    role: getUserRole() || 'tenant'
-  }));
-  const signature = btoa('mock_signature');
-  
-  return `${header}.${payload}.${signature}`;
-};
+
 
 // Get token expiry time
 export const getTokenExpiry = (token) => {
