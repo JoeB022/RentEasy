@@ -4,11 +4,16 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # Frontend build outputs
 frontend/dist/
 frontend/build/
 frontend/.vite/
+dist/
+dist-ssr/
+*.local
 
 # Backend
 __pycache__/
@@ -60,11 +65,17 @@ instance/
 backend/instance/
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
 *~
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # OS
 .DS_Store
@@ -138,16 +149,6 @@ public
 tmp/
 temp/
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
 # Testing
 .coverage
 .coverage.*
@@ -166,8 +167,6 @@ env/
 pip-log.txt
 pip-delete-this-directory.txt
 .tox/
-.coverage
-.coverage.*
 .cache
 nosetests.xml
 coverage.xml
@@ -177,37 +176,3 @@ coverage.xml
 .mypy_cache/
 .pytest_cache/
 .hypothesis/
-
-# Backend
-__pycache__/
-*.py[cod]
-*.so
-.Python
-build/
-venv/
-*.db
-*.sqlite
-*.sqlite3
-.env
-.env.local
-.env.*.local
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Testing
-.coverage
-.coverage.*
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-htmlcov/
