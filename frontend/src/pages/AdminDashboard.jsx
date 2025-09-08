@@ -14,6 +14,7 @@ import {
 
 import ListingApprovals from '../components/ListApprovals';
 import ManageUsers from '../components/ManageUsers';
+import PendingUserApprovals from '../components/PendingUserApprovals';
 import AdminAnalytics from '../components/AdminAnalytics';
 import AbuseReports from '../components/AbuseReports';
 import ServiceRatesEditor from '../components/ServiceRatesEditor';
@@ -239,9 +240,9 @@ const AdminDashboard = () => {
               {activeSection === 'Users' && (
                 <>
                   <p className="text-gray-600 text-sm mb-4">
-                    👥 View and manage tenants and landlords.
+                    👥 Approve pending user registrations and manage existing users.
                   </p>
-                  <ManageUsers />
+                  <PendingUserApprovals />
                 </>
               )}
 

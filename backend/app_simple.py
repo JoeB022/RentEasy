@@ -41,6 +41,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(10), nullable=False, default='tenant')
+    is_approved = db.Column(db.Boolean, default=False, nullable=False)  # Admin approval required
     created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), nullable=False)
     
     def __init__(self, **kwargs):
@@ -49,6 +50,9 @@ class User(db.Model):
             self.role = 'tenant'
         if self.created_at is None:
             self.created_at = datetime.now(timezone.utc)
+        # Admin users are auto-approved, others need approval
+        if self.role == 'admin':
+            self.is_approved = True
     
     @staticmethod
     def is_valid_role(role):
@@ -260,7 +264,22 @@ def create_app():
             db.session.add(new_user)
             db.session.commit()
             
-            # Generate tokens
+            # Check if user needs approval
+            if not new_user.is_approved:
+                return jsonify({
+                    'message': 'User registered successfully. Your account is pending admin approval.',
+                    'user': {
+                        'id': new_user.id,
+                        'username': new_user.username,
+                        'email': new_user.email,
+                        'role': new_user.role,
+                        'is_approved': new_user.is_approved,
+                        'created_at': new_user.created_at.isoformat()
+                    },
+                    'status': 'pending_approval'
+                }), 201
+            
+            # Generate tokens only for approved users
             token_identity = json.dumps({
                 'user_id': new_user.id,
                 'username': new_user.username,
@@ -277,6 +296,7 @@ def create_app():
                     'username': new_user.username,
                     'email': new_user.email,
                     'role': new_user.role,
+                    'is_approved': new_user.is_approved,
                     'created_at': new_user.created_at.isoformat()
                 },
                 'tokens': {
@@ -321,6 +341,22 @@ def create_app():
             if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
                 return jsonify({'error': 'Invalid credentials'}), 401
             
+            # Check if user is approved
+            if not user.is_approved:
+                return jsonify({
+                    'error': 'Account pending approval',
+                    'message': 'Your account is pending admin approval. Please wait for an administrator to approve your account.',
+                    'user': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email,
+                        'role': user.role,
+                        'is_approved': user.is_approved,
+                        'created_at': user.created_at.isoformat()
+                    },
+                    'status': 'pending_approval'
+                }), 403
+            
             # Generate tokens
             token_identity = json.dumps({
                 'user_id': user.id,
@@ -338,6 +374,7 @@ def create_app():
                     'username': user.username,
                     'email': user.email,
                     'role': user.role,
+                    'is_approved': user.is_approved,
                     'created_at': user.created_at.isoformat()
                 },
                 'tokens': {
@@ -439,6 +476,153 @@ def create_app():
             
         except Exception as e:
             return jsonify({'error': 'Token validation failed', 'details': str(e)}), 500
+
+    # Admin User Management Routes
+    @app.route('/admin/users', methods=['GET'])
+    @jwt_required()
+    def get_all_users():
+        """Get all users (admin only)."""
+        try:
+            current_user = get_jwt_identity()
+            user_data = json.loads(current_user)
+            
+            # Check if user is admin
+            if user_data.get('role') != 'admin':
+                return jsonify({'error': 'Only admins can access this endpoint'}), 403
+            
+            # Get all users
+            users = User.query.order_by(User.created_at.desc()).all()
+            
+            users_data = []
+            for user in users:
+                users_data.append({
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'role': user.role,
+                    'is_approved': user.is_approved,
+                    'created_at': user.created_at.isoformat()
+                })
+            
+            return jsonify({
+                'message': 'Users retrieved successfully',
+                'users': users_data,
+                'total': len(users_data)
+            }), 200
+            
+        except Exception as e:
+            return jsonify({'error': 'Failed to retrieve users', 'details': str(e)}), 500
+
+    @app.route('/admin/users/pending', methods=['GET'])
+    @jwt_required()
+    def get_pending_users():
+        """Get pending users awaiting approval (admin only)."""
+        try:
+            current_user = get_jwt_identity()
+            user_data = json.loads(current_user)
+            
+            # Check if user is admin
+            if user_data.get('role') != 'admin':
+                return jsonify({'error': 'Only admins can access this endpoint'}), 403
+            
+            # Get pending users
+            pending_users = User.query.filter_by(is_approved=False).order_by(User.created_at.desc()).all()
+            
+            users_data = []
+            for user in pending_users:
+                users_data.append({
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'role': user.role,
+                    'is_approved': user.is_approved,
+                    'created_at': user.created_at.isoformat()
+                })
+            
+            return jsonify({
+                'message': 'Pending users retrieved successfully',
+                'users': users_data,
+                'total': len(users_data)
+            }), 200
+            
+        except Exception as e:
+            return jsonify({'error': 'Failed to retrieve pending users', 'details': str(e)}), 500
+
+    @app.route('/admin/users/<int:user_id>/approve', methods=['PUT'])
+    @jwt_required()
+    def approve_user(user_id):
+        """Approve a user (admin only)."""
+        try:
+            current_user = get_jwt_identity()
+            user_data = json.loads(current_user)
+            
+            # Check if user is admin
+            if user_data.get('role') != 'admin':
+                return jsonify({'error': 'Only admins can approve users'}), 403
+            
+            # Find the user
+            user = User.query.get(user_id)
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+            
+            # Check if user is already approved
+            if user.is_approved:
+                return jsonify({'error': 'User is already approved'}), 400
+            
+            # Approve the user
+            user.is_approved = True
+            db.session.commit()
+            
+            return jsonify({
+                'message': f'User {user.username} has been approved successfully',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'role': user.role,
+                    'is_approved': user.is_approved,
+                    'created_at': user.created_at.isoformat()
+                }
+            }), 200
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': 'Failed to approve user', 'details': str(e)}), 500
+
+    @app.route('/admin/users/<int:user_id>/reject', methods=['PUT'])
+    @jwt_required()
+    def reject_user(user_id):
+        """Reject a user (admin only)."""
+        try:
+            current_user = get_jwt_identity()
+            user_data = json.loads(current_user)
+            
+            # Check if user is admin
+            if user_data.get('role') != 'admin':
+                return jsonify({'error': 'Only admins can reject users'}), 403
+            
+            # Find the user
+            user = User.query.get(user_id)
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+            
+            # Check if user is already approved
+            if user.is_approved:
+                return jsonify({'error': 'User is already approved'}), 400
+            
+            # Delete the user (rejection means removal)
+            username = user.username
+            email = user.email
+            db.session.delete(user)
+            db.session.commit()
+            
+            return jsonify({
+                'message': f'User {username} ({email}) has been rejected and removed from the system'
+            }), 200
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': 'Failed to reject user', 'details': str(e)}), 500
 
     # Property Management Routes
     @app.route('/api/properties', methods=['GET'])
@@ -976,6 +1160,28 @@ def create_app():
                     'user_role': user_role
                 }), 403
             
+            # Get real-time user statistics
+            total_users = User.query.count()
+            pending_users = User.query.filter_by(is_approved=False).count()
+            approved_users = User.query.filter_by(is_approved=True).count()
+            
+            # Get user breakdown by role
+            tenants = User.query.filter_by(role='tenant', is_approved=True).count()
+            landlords = User.query.filter_by(role='landlord', is_approved=True).count()
+            admins = User.query.filter_by(role='admin').count()
+            
+            # Get recent pending users (last 5)
+            recent_pending = User.query.filter_by(is_approved=False).order_by(User.created_at.desc()).limit(5).all()
+            recent_pending_data = []
+            for user in recent_pending:
+                recent_pending_data.append({
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'role': user.role,
+                    'created_at': user.created_at.isoformat()
+                })
+            
             return jsonify({
                 'message': 'Welcome to Admin Dashboard',
                 'user': {
@@ -985,16 +1191,18 @@ def create_app():
                 },
                 'dashboard_data': {
                     'system_stats': {
-                        'total_users': 156,
-                        'total_properties': 89,
-                        'active_rentals': 134,
-                        'pending_approvals': 12
+                        'total_users': total_users,
+                        'approved_users': approved_users,
+                        'pending_approvals': pending_users,
+                        'total_properties': Property.query.count(),
+                        'active_rentals': Booking.query.filter_by(status='Approved').count()
                     },
                     'user_breakdown': {
-                        'tenants': 98,
-                        'landlords': 45,
-                        'admins': 3
+                        'tenants': tenants,
+                        'landlords': landlords,
+                        'admins': admins
                     },
+                    'recent_pending_users': recent_pending_data,
                     'system_health': {
                         'database': 'Healthy',
                         'api_uptime': '99.9%',
@@ -1003,6 +1211,7 @@ def create_app():
                 },
                 'available_actions': [
                     'Manage all users',
+                    'Approve pending users',
                     'View system logs',
                     'Generate system reports',
                     'Manage system settings',
