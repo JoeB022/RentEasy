@@ -1,3 +1,4 @@
+import pytest
 #!/usr/bin/env python3
 """
 Test script to test all endpoints without circular import issues.
@@ -10,6 +11,7 @@ import time
 # Base URL for the Flask app
 BASE_URL = "http://localhost:8000"
 
+@pytest.mark.integration
 def test_endpoints():
     """Test all endpoints systematically."""
     print("🔒 Testing All Endpoints")

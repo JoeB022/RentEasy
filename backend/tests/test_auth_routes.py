@@ -1,7 +1,9 @@
 import pytest
+import pytest
 import json
 from auth.utils import hash_password
 
+@pytest.mark.unit
 def test_register_success(client):
     """Test successful user registration."""
     data = {
@@ -33,6 +35,7 @@ def test_register_success(client):
     assert 'access_token' in tokens
     assert 'refresh_token' in tokens
 
+@pytest.mark.unit
 def test_register_default_role(client):
     """Test user registration with default role (tenant)."""
     data = {
@@ -52,6 +55,7 @@ def test_register_default_role(client):
     user = response_data['user']
     assert user['role'] == 'tenant'
 
+@pytest.mark.unit
 def test_register_admin_role(client):
     """Test user registration with admin role."""
     data = {
@@ -71,6 +75,7 @@ def test_register_admin_role(client):
     user = response_data['user']
     assert user['role'] == 'admin'
 
+@pytest.mark.unit
 def test_register_missing_fields(client):
     """Test registration with missing required fields."""
     # Missing username
@@ -112,6 +117,7 @@ def test_register_missing_fields(client):
     assert response.status_code == 400
     assert 'Missing required field: password' in response.data.decode()
 
+@pytest.mark.unit
 def test_register_validation_errors(client):
     """Test registration validation errors."""
     # Username too short
@@ -171,6 +177,7 @@ def test_register_validation_errors(client):
     assert response.status_code == 400
     assert 'Invalid role' in response.data.decode()
 
+@pytest.mark.unit
 def test_register_duplicate_username(client):
     """Test registration with duplicate username."""
     # First registration
@@ -200,6 +207,7 @@ def test_register_duplicate_username(client):
     assert response.status_code == 409
     assert 'Username already exists' in response.data.decode()
 
+@pytest.mark.unit
 def test_register_duplicate_email(client):
     """Test registration with duplicate email."""
     # First registration
@@ -229,6 +237,7 @@ def test_register_duplicate_email(client):
     assert response.status_code == 409
     assert 'Email already exists' in response.data.decode()
 
+@pytest.mark.unit
 def test_login_success(client):
     """Test successful user login."""
     # First register a user
@@ -267,6 +276,7 @@ def test_login_success(client):
     assert 'access_token' in tokens
     assert 'refresh_token' in tokens
 
+@pytest.mark.unit
 def test_login_invalid_credentials(client):
     """Test login with invalid credentials."""
     # Wrong username
@@ -295,6 +305,7 @@ def test_login_invalid_credentials(client):
     assert response.status_code == 401
     assert 'Invalid credentials' in response.data.decode()
 
+@pytest.mark.unit
 def test_login_missing_fields(client):
     """Test login with missing fields."""
     # Missing username
@@ -321,6 +332,7 @@ def test_login_missing_fields(client):
     assert response.status_code == 400
     assert 'Username and password are required' in response.data.decode()
 
+@pytest.mark.unit
 def test_get_profile_authenticated(client):
     """Test getting profile with valid JWT token."""
     # First register and login to get tokens
@@ -353,6 +365,7 @@ def test_get_profile_authenticated(client):
     assert 'role' in user
     assert 'created_at' in user
 
+@pytest.mark.unit
 def test_get_profile_unauthenticated(client):
     """Test getting profile without JWT token."""
     response = client.get('/auth/me')
@@ -360,6 +373,7 @@ def test_get_profile_unauthenticated(client):
     assert response.status_code == 401
     assert 'Missing Authorization Header' in response.data.decode()
 
+@pytest.mark.unit
 def test_logout_authenticated(client):
     """Test logout with valid JWT token."""
     # First register and login to get tokens
@@ -385,6 +399,7 @@ def test_logout_authenticated(client):
     response_data = json.loads(response.data)
     assert 'logged out successfully' in response_data['message']
 
+@pytest.mark.unit
 def test_logout_unauthenticated(client):
     """Test logout without JWT token."""
     response = client.post('/auth/logout')
@@ -392,6 +407,7 @@ def test_logout_unauthenticated(client):
     assert response.status_code == 401
     assert 'Missing Authorization Header' in response.data.decode()
 
+@pytest.mark.unit
 def test_refresh_token(client):
     """Test token refresh functionality."""
     # First register and login to get tokens
@@ -419,6 +435,7 @@ def test_refresh_token(client):
     assert response_data['message'] == 'Token refreshed successfully'
     assert 'access_token' in response_data
 
+@pytest.mark.unit
 def test_validate_token(client):
     """Test token validation."""
     # First register and login to get tokens
@@ -450,6 +467,7 @@ def test_validate_token(client):
     assert 'user_id' in user
     assert 'role' in user
 
+@pytest.mark.unit
 def test_register_no_data(client):
     """Test registration with no data."""
     response = client.post('/auth/register')
@@ -457,6 +475,7 @@ def test_register_no_data(client):
     assert response.status_code == 400
     assert 'Content-Type must be application/json' in response.data.decode()
 
+@pytest.mark.unit
 def test_login_no_data(client):
     """Test login with no data."""
     response = client.post('/auth/login')

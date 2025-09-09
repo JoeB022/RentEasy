@@ -1,8 +1,10 @@
 import pytest
+import pytest
 from app import db
 from models.user import User, UserRole
 import bcrypt
 
+@pytest.mark.unit
 def test_user_model_creation(app):
     """Test that User model can be created and saved."""
     with app.app_context():
@@ -28,12 +30,14 @@ def test_user_model_creation(app):
         db.session.delete(saved_user)
         db.session.commit()
 
+@pytest.mark.unit
 def test_user_role_enum(app):
     """Test that UserRole enum works correctly."""
     assert UserRole.TENANT.value == "tenant"
     assert UserRole.LANDLORD.value == "landlord"
     assert UserRole.ADMIN.value == "admin"
 
+@pytest.mark.unit
 def test_user_to_dict(app):
     """Test that User.to_dict() method works correctly."""
     with app.app_context():
@@ -51,6 +55,7 @@ def test_user_to_dict(app):
         assert 'password' not in user_dict  # Password should not be included
         assert 'created_at' in user_dict
 
+@pytest.mark.unit
 def test_user_unique_constraints(app):
     """Test that username and email uniqueness constraints work."""
     with app.app_context():
@@ -98,6 +103,7 @@ def test_user_unique_constraints(app):
         db.session.delete(user1)
         db.session.commit()
 
+@pytest.mark.unit
 def test_user_default_values(app):
     """Test that User model has correct default values."""
     with app.app_context():
@@ -111,6 +117,7 @@ def test_user_default_values(app):
         assert user.role == UserRole.TENANT
         assert user.created_at is not None
 
+@pytest.mark.unit
 def test_database_connection(app):
     """Test that database connection is working."""
     with app.app_context():

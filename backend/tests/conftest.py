@@ -6,6 +6,10 @@ from config import TestingConfig
 
 def create_test_app():
     """Create a test app with TestingConfig."""
+    # Ensure we use in-memory SQLite for tests unless DATABASE_URL is explicitly set
+    if not os.environ.get('DATABASE_URL'):
+        os.environ['DATABASE_URL'] = 'sqlite:///:memory:'
+    
     app = create_app("testing")
     return app
 

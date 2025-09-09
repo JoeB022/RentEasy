@@ -1,3 +1,4 @@
+import pytest
 #!/usr/bin/env python3
 """
 Comprehensive authentication and authorization tests for Flask + SQLAlchemy backend.
@@ -381,6 +382,7 @@ class TestAuthFlow:
         }
 
 
+@pytest.mark.unit
 def test_backend_health_check():
     """Test if backend is running and responding."""
     print("\n=== Backend Health Check ===")

@@ -1,3 +1,4 @@
+import pytest
 #!/usr/bin/env python3
 """
 Test script to demonstrate the protected routes with role-based access control.
@@ -9,6 +10,7 @@ import json
 # Base URL for the Flask app
 BASE_URL = "http://localhost:8000"
 
+@pytest.mark.integration
 def test_protected_routes():
     """Test the protected routes with different user roles."""
     print("🔒 Testing Protected Routes with Role-Based Access Control")

@@ -63,9 +63,7 @@ class DevelopmentConfig(BaseConfig):
     # SQLite-specific engine options (no pooling needed)
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
-        "pool_recycle": 300,
-        "pool_size": 1,
-        "max_overflow": 0
+        "pool_recycle": 300
     }
     
     # Development CORS
@@ -89,12 +87,10 @@ class TestingConfig(BaseConfig):
     # Test database (in-memory SQLite)
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     
-    # SQLite-specific engine options for testing
+    # SQLite-specific engine options for testing (no pooling for in-memory)
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
-        "pool_recycle": 300,
-        "pool_size": 1,
-        "max_overflow": 0
+        "pool_recycle": 300
     }
     
     # Test CORS

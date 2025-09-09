@@ -1,6 +1,8 @@
 import pytest
+import pytest
 import json
 
+@pytest.mark.unit
 def test_tenant_dashboard_access(client):
     """Test tenant dashboard access with tenant role."""
     # First register a tenant user
@@ -35,6 +37,7 @@ def test_tenant_dashboard_access(client):
     assert user['role'] == 'tenant'
     assert user['username'] == 'tenantuser'
 
+@pytest.mark.unit
 def test_tenant_dashboard_denied_for_landlord(client):
     """Test tenant dashboard access denied for landlord role."""
     # First register a landlord user
@@ -64,6 +67,7 @@ def test_tenant_dashboard_denied_for_landlord(client):
     assert 'tenant' in response_data['required_roles']
     assert response_data['user_role'] == 'landlord'
 
+@pytest.mark.unit
 def test_landlord_dashboard_access(client):
     """Test landlord dashboard access with landlord role."""
     # First register a landlord user
@@ -103,6 +107,7 @@ def test_landlord_dashboard_access(client):
     assert 'total_properties' in dashboard_data
     assert 'monthly_revenue' in dashboard_data
 
+@pytest.mark.unit
 def test_landlord_dashboard_denied_for_tenant(client):
     """Test landlord dashboard access denied for tenant role."""
     # First register a tenant user
@@ -132,6 +137,7 @@ def test_landlord_dashboard_denied_for_tenant(client):
     assert 'landlord' in response_data['required_roles']
     assert response_data['user_role'] == 'tenant'
 
+@pytest.mark.unit
 def test_admin_dashboard_access(client):
     """Test admin dashboard access with admin role."""
     # First register an admin user
@@ -171,6 +177,7 @@ def test_admin_dashboard_access(client):
     assert 'user_breakdown' in dashboard_data
     assert 'system_health' in dashboard_data
 
+@pytest.mark.unit
 def test_admin_dashboard_denied_for_tenant(client):
     """Test admin dashboard access denied for tenant role."""
     # First register a tenant user
@@ -200,6 +207,7 @@ def test_admin_dashboard_denied_for_tenant(client):
     assert 'admin' in response_data['required_roles']
     assert response_data['user_role'] == 'tenant'
 
+@pytest.mark.unit
 def test_dashboard_access_without_token(client):
     """Test dashboard access without JWT token."""
     # Try to access tenant dashboard without token
@@ -220,6 +228,7 @@ def test_dashboard_access_without_token(client):
     assert response.status_code == 401
     assert 'Missing Authorization Header' in response.data.decode()
 
+@pytest.mark.unit
 def test_user_profile_access(client):
     """Test user profile access for any authenticated user."""
     # First register a tenant user
@@ -253,6 +262,7 @@ def test_user_profile_access(client):
     assert profile['role'] == 'tenant'
     assert 'permissions' in profile
 
+@pytest.mark.unit
 def test_user_settings_get(client):
     """Test user settings retrieval."""
     # First register a user
@@ -286,6 +296,7 @@ def test_user_settings_get(client):
     assert settings['role'] == 'landlord'
     assert 'preferences' in settings
 
+@pytest.mark.unit
 def test_user_settings_update(client):
     """Test user settings update."""
     # First register a user
@@ -324,6 +335,7 @@ def test_user_settings_update(client):
     assert 'updated_settings' in response_data
     assert response_data['updated_settings'] == update_data
 
+@pytest.mark.unit
 def test_health_check_endpoint(client):
     """Test health check endpoint."""
     # First register a user
@@ -354,6 +366,7 @@ def test_health_check_endpoint(client):
     assert 'user' in response_data
     assert 'timestamp' in response_data
 
+@pytest.mark.unit
 def test_role_permissions_functionality(client):
     """Test that role permissions are correctly returned."""
     # Test tenant permissions
@@ -391,6 +404,7 @@ def test_role_permissions_functionality(client):
     assert 'manage_all_users' not in permissions
     assert 'view_system_logs' not in permissions
 
+@pytest.mark.unit
 def test_invalid_token_format(client):
     """Test behavior with invalid token format."""
     # Create an invalid token (not a real JWT)
@@ -402,6 +416,7 @@ def test_invalid_token_format(client):
     # Flask-JWT-Extended returns 422 for invalid token format
     assert response.status_code == 422
 
+@pytest.mark.unit
 def test_missing_role_in_token(client):
     """Test behavior when token is missing role information."""
     # This test would require creating a custom token without role info
@@ -411,6 +426,7 @@ def test_missing_role_in_token(client):
     response = client.get('/dashboard/tenant')
     assert response.status_code == 401
 
+@pytest.mark.unit
 def test_multiple_role_access(client):
     """Test access to routes that allow multiple roles."""
     # This would test the @role_required decorator with multiple roles

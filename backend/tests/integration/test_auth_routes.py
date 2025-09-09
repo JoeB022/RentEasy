@@ -1,3 +1,4 @@
+import pytest
 #!/usr/bin/env python3
 """
 Simple test script to demonstrate the auth routes working.
@@ -9,6 +10,7 @@ import json
 # Base URL for the Flask app
 BASE_URL = "http://localhost:8000"
 
+@pytest.mark.integration
 def test_auth_routes():
     """Test the authentication routes."""
     print("🔐 Testing Auth Routes")
