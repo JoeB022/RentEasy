@@ -31,6 +31,14 @@ class BaseConfig:
     LOG_LEVEL = get_optional_env("LOG_LEVEL", "INFO")
     LOG_FORMAT = get_optional_env("LOG_FORMAT", "text")  # text or json
     LOG_FILE = get_optional_env("LOG_FILE", None)
+    
+    # Security settings
+    FORCE_HTTPS = get_optional_env("FORCE_HTTPS", "false").lower() == "true"
+    FORCE_HTTPS_PERMANENT = get_optional_env("FORCE_HTTPS_PERMANENT", "false").lower() == "true"
+    STRICT_TRANSPORT_SECURITY = get_optional_env("STRICT_TRANSPORT_SECURITY", "true").lower() == "true"
+    STRICT_TRANSPORT_SECURITY_MAX_AGE = int(get_optional_env("STRICT_TRANSPORT_SECURITY_MAX_AGE", "31536000"))
+    STRICT_TRANSPORT_SECURITY_INCLUDE_SUBDOMAINS = get_optional_env("STRICT_TRANSPORT_SECURITY_INCLUDE_SUBDOMAINS", "true").lower() == "true"
+    REFERRER_POLICY = get_optional_env("REFERRER_POLICY", "strict-origin-when-cross-origin")
 
 class DevelopmentConfig(BaseConfig):
     """Development configuration."""
@@ -91,6 +99,14 @@ def create_production_config():
     # Production logging
     LOG_FORMAT = "json"  # Always JSON in production
     LOG_FILE = get_optional_env("LOG_FILE", "/var/log/renteasy/app.log")
+    
+    # Production security settings
+    FORCE_HTTPS = True
+    FORCE_HTTPS_PERMANENT = True
+    STRICT_TRANSPORT_SECURITY = True
+    STRICT_TRANSPORT_SECURITY_MAX_AGE = 31536000  # 1 year
+    STRICT_TRANSPORT_SECURITY_INCLUDE_SUBDOMAINS = True
+    REFERRER_POLICY = "strict-origin-when-cross-origin"
     
     # Set required environment variables
     ProductionConfig.SECRET_KEY = get_required_env("SECRET_KEY")

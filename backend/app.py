@@ -75,12 +75,18 @@ def create_app(config_name="default"):
     from middleware.logging_middleware import setup_logging_middleware
     setup_logging_middleware(app)
     
+    # Setup security middleware
+    from middleware.security_middleware import setup_security_middleware
+    setup_security_middleware(app)
+    
     # Register blueprints
     from routes.auth import auth_bp
     from routes.protected import protected_bp
+    from routes.health import health_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(protected_bp)
+    app.register_blueprint(health_bp)
     
     # Make User model available globally
     app.User = User
