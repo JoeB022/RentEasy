@@ -23,7 +23,11 @@ def create_app(config_name="default"):
     
     # Initialize extensions
     db.init_app(app)
-    CORS(app, origins=app.config['CORS_ORIGINS'], supports_credentials=True)
+    CORS(app, 
+         origins=app.config['CORS_ORIGINS'], 
+         supports_credentials=True,
+         allow_headers=["Content-Type", "Authorization"],
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
     jwt.init_app(app)
     migrate.init_app(app, db)
     
@@ -51,6 +55,8 @@ app = create_app()
 with app.app_context():
     User = app.User
     UserRole = app.UserRole
+    # Initialize database tables
+    db.create_all()
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=8000)

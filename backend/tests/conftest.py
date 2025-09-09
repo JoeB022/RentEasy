@@ -24,6 +24,8 @@ def app():
     app = create_test_app()
     
     with app.app_context():
+        # Drop all tables first to avoid conflicts
+        db.drop_all()
         db.create_all()
         yield app
         db.drop_all()
