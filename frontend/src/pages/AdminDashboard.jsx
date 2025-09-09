@@ -133,15 +133,6 @@ const AdminDashboard = () => {
               )}
             </button>
           ))}
-          
-          {/* Logout Button in Mobile Sidebar */}
-          <div className="pt-6 border-t border-white/20">
-            <LogoutButton 
-              variant="outline" 
-              size="sm"
-              className="w-full border-white/40 text-white hover:bg-white hover:text-[#003B4C] hover:border-white transition-all duration-300 transform hover:scale-105 hover:shadow-md rounded-xl"
-            />
-          </div>
         </div>
       </aside>
 
@@ -180,15 +171,6 @@ const AdminDashboard = () => {
               )}
             </button>
           ))}
-          
-          {/* Logout Button in Desktop Sidebar */}
-          <div className="pt-6 border-t border-white/20">
-            <LogoutButton 
-              variant="outline" 
-              size="sm"
-              className="w-full border-white/40 text-white hover:bg-white hover:text-[#003B4C] hover:border-white transition-all duration-300 transform hover:scale-105 hover:shadow-md rounded-xl"
-            />
-          </div>
         </div>
       </aside>
 
