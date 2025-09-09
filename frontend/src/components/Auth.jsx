@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { FcGoogle } from 'react-icons/fc';
 import { Navigate } from 'react-router-dom';
 import { TextInput, SubmitButton } from './forms';
-import { setToken, clearToken, isAuthenticated } from '../utils/auth';
+import { setToken, clearToken, isAuthenticated, getToken } from '../utils/auth';
 import { Button, Typography } from './ui';
 import { jwtDecode } from 'jwt-decode';
 import { 
@@ -58,7 +58,8 @@ const signupSchema = yup.object({
 // 🔐 Login API call
 const login = async (email, password) => {
   try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const res = await fetch(`${apiUrl}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -123,7 +124,8 @@ const login = async (email, password) => {
 // 🆕 Registration API call
 const register = async (username, email, password, role) => {
   try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const res = await fetch(`${apiUrl}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, email, password, role }),
@@ -154,6 +156,48 @@ export const logout = () => {
   
   toast.success('👋 Logged out successfully');
   window.location.href = '/login';
+};
+
+// 🗑️ Delete account function
+export const deleteAccount = async () => {
+  try {
+    const token = getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const res = await fetch(`${apiUrl}/auth/delete-account`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Account deletion failed');
+    }
+
+    const data = await res.json();
+    
+    // Clear all user data
+    clearToken();
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('username');
+    
+    toast.success('🗑️ Account deleted successfully');
+    window.location.href = '/login';
+    
+    return data;
+  } catch (error) {
+    console.error('Delete account error:', error);
+    toast.error('❌ Failed to delete account: ' + error.message);
+    throw error;
+  }
 };
 
 // 🛡️ Route protection

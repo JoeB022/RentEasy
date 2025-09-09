@@ -14,7 +14,7 @@ from werkzeug.security import generate_password_hash
 from datetime import timedelta
 import json
 
-from models.user import User, UserRole
+from models.user import UserRole
 from auth.utils import hash_password, verify_password
 
 # Create Blueprint
@@ -73,6 +73,7 @@ def register():
             return jsonify({'error': f'Invalid role. Must be one of: {[r.value for r in UserRole]}'}), 400
         
         # Check if username already exists
+        User = current_app.User
         if User.query.filter_by(username=username).first():
             return jsonify({'error': 'Username already exists'}), 409
         
@@ -165,6 +166,7 @@ def login():
             return jsonify({'error': 'Invalid email format'}), 400
         
         # Find user by email
+        User = current_app.User
         user = User.query.filter_by(email=email).first()
         
         if not user:
@@ -233,6 +235,52 @@ def logout():
             
     except Exception as e:
         return jsonify({'error': 'Logout failed', 'details': str(e)}), 500
+
+@auth_bp.route('/delete-account', methods=['DELETE'])
+@jwt_required()
+def delete_account():
+    """
+    Delete current user's account.
+    Requires valid JWT token in Authorization header.
+    """
+    try:
+        # Get current user from token
+        current_user = get_jwt_identity()
+        
+        if not current_user:
+            return jsonify({'error': 'No valid token found'}), 401
+        
+        # Parse user info from token
+        user_info = json.loads(current_user)
+        username = user_info.get('username')
+        user_id = user_info.get('id')
+        
+        if not username or not user_id:
+            return jsonify({'error': 'Invalid user information'}), 400
+        
+        # Get User model from app context
+        User = current_app.User
+        
+        # Find the user in database
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Store user info for response
+        deleted_username = user.username
+        deleted_email = user.email
+        
+        # Delete the user
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Account for {deleted_username} ({deleted_email}) has been deleted successfully'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to delete account', 'details': str(e)}), 500
 
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()

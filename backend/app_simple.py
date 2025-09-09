@@ -437,6 +437,65 @@ def create_app():
         except Exception as e:
             return jsonify({'error': 'Logout failed', 'details': str(e)}), 500
 
+    @app.route('/auth/delete-account', methods=['DELETE'])
+    @jwt_required()
+    def delete_account():
+        """Delete current user's account."""
+        try:
+            current_user = get_jwt_identity()
+            
+            if not current_user:
+                return jsonify({'error': 'No valid token found'}), 401
+            
+            # Parse user info from token
+            user_info = json.loads(current_user)
+            username = user_info.get('username')
+            user_id = user_info.get('user_id')
+            
+            if not username or not user_id:
+                return jsonify({'error': 'Invalid user information'}), 400
+            
+            # Find the user in database
+            user = User.query.get(user_id)
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+            
+            # Store user info for response
+            deleted_username = user.username
+            deleted_email = user.email
+            user_role = user.role
+            
+            # If user is a landlord, delete all their properties first
+            properties_deleted = 0
+            if user_role == 'landlord':
+                # Find all properties owned by this landlord
+                landlord_properties = Property.query.filter_by(landlord_id=user_id).all()
+                properties_deleted = len(landlord_properties)
+                
+                # Delete all properties
+                for property_obj in landlord_properties:
+                    db.session.delete(property_obj)
+                
+                print(f"Deleted {properties_deleted} properties for landlord {deleted_username}")
+            
+            # Delete the user
+            db.session.delete(user)
+            db.session.commit()
+            
+            # Prepare response message
+            message = f'Account for {deleted_username} ({deleted_email}) has been deleted successfully'
+            if user_role == 'landlord' and properties_deleted > 0:
+                message += f'. Also deleted {properties_deleted} properties.'
+            
+            return jsonify({
+                'message': message,
+                'properties_deleted': properties_deleted if user_role == 'landlord' else 0
+            }), 200
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': 'Failed to delete account', 'details': str(e)}), 500
+
     @app.route('/auth/refresh', methods=['POST'])
     @jwt_required(refresh=True)
     def refresh():

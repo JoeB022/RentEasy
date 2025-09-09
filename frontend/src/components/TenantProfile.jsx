@@ -11,6 +11,7 @@ import {
   Bell,
   Lock,
 } from 'lucide-react';
+import { logout, deleteAccount } from './Auth';
 
 const TenantProfile = ({ tenant }) => {
   const initialProfile =
@@ -28,6 +29,8 @@ const TenantProfile = ({ tenant }) => {
   const [editMode, setEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (tenant) setProfile(tenant);
@@ -52,6 +55,22 @@ const TenantProfile = ({ tenant }) => {
   };
 
   const toggleEdit = () => setEditMode(!editMode);
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteAccount();
+    } catch (error) {
+      console.error('Delete account error:', error);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   const getInitials = (name) =>
     name
@@ -303,11 +322,72 @@ const TenantProfile = ({ tenant }) => {
             </h3>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <button className="flex items-center gap-2 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg border border-red-200">
+              <button 
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex items-center gap-2 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg border border-red-200"
+              >
                 <Trash2 size={16} /> Delete Account
               </button>
-              <button className="flex items-center gap-2 text-[#003B4C] hover:text-[#005A6E] bg-[#003B4C]/10 hover:bg-[#003B4C]/20 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg border border-[#003B4C]/20">
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-[#003B4C] hover:text-[#005A6E] bg-[#003B4C]/10 hover:bg-[#003B4C]/20 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg border border-[#003B4C]/20"
+              >
                 <LogOut size={16} /> Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="text-red-600" size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Delete Account</h3>
+                <p className="text-gray-600">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <div className="mb-8">
+              <p className="text-gray-700 mb-4">
+                Are you sure you want to delete your account? This will permanently remove:
+              </p>
+              <ul className="text-sm text-gray-600 space-y-1 ml-4">
+                <li>• Your profile information</li>
+                <li>• All your data and preferences</li>
+                <li>• Access to the platform</li>
+              </ul>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all duration-300"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    Delete Account
+                  </>
+                )}
               </button>
             </div>
           </div>
