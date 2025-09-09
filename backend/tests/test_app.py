@@ -71,10 +71,9 @@ def test_config_values(app):
     assert app.config['JWT_SECRET_KEY'] == 'test-jwt-secret-key'
 
 @pytest.mark.unit
-@pytest.mark.unit
 def test_cors_configuration(app):
     """Test that CORS is configured correctly."""
-    assert app.config['CORS_ORIGINS'] == ['http://localhost:5173']
+    assert app.config['CORS_ORIGINS'] == ["http://localhost:3000", "http://localhost:5173"]
     assert app.config['CORS_SUPPORTS_CREDENTIALS'] is True
 
 @pytest.mark.unit

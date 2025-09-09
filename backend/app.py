@@ -53,9 +53,7 @@ def create_app(config_name="default"):
         except Exception as e:
             app.logger.error(f"Failed to initialize Sentry: {e}")
     
-    # Ensure JWT has the correct secret key
-    if 'JWT_SECRET_KEY' in app.config:
-        app.config['SECRET_KEY'] = app.config['JWT_SECRET_KEY']
+    # JWT will use JWT_SECRET_KEY from config, no need to override SECRET_KEY
     
     # Initialize extensions
     db.init_app(app)

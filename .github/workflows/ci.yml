@@ -1,0 +1,386 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, prod-harden/refactor ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.12'
+  NODE_VERSION: '18'
+
+jobs:
+  # Lint and Code Quality
+  lint:
+    name: Lint and Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort mypy
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+
+      - name: Lint with flake8
+        run: |
+          # Stop the build if there are Python syntax errors or undefined names
+          flake8 backend/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 backend/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Check code formatting with black
+        run: |
+          black --check backend/
+
+      - name: Check import sorting with isort
+        run: |
+          isort --check-only backend/
+
+      - name: Type checking with mypy
+        run: |
+          mypy backend/ --ignore-missing-imports || true
+
+  # Backend Tests
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_renteasy
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r test_requirements.txt
+
+      - name: Run unit tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_renteasy
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key
+          JWT_SECRET_KEY: test-jwt-secret-key
+          FRONTEND_URL: http://localhost:3000
+        run: |
+          cd backend
+          pytest tests/ -v --cov=. --cov-report=xml --cov-report=term-missing -m "unit"
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_renteasy
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key
+          JWT_SECRET_KEY: test-jwt-secret-key
+          FRONTEND_URL: http://localhost:3000
+        run: |
+          cd backend
+          pytest tests/integration/ -v -m "integration"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+
+  # Security Scan
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit safety
+
+      - name: Run Bandit security scan
+        run: |
+          bandit -r backend/ -f json -o bandit-report.json || true
+
+      - name: Run Safety check
+        run: |
+          safety check --json --output safety-report.json || true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+
+  # Docker Build and Test
+  docker:
+    name: Docker Build and Test
+    runs-on: ubuntu-latest
+    needs: [lint, test-backend]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          docker build -t renteasy-backend:latest .
+
+      - name: Test Docker image
+        run: |
+          # Test that the image runs and health check works
+          docker run -d --name test-backend \
+            -e SECRET_KEY=test-secret \
+            -e JWT_SECRET_KEY=test-jwt-secret \
+            -e DATABASE_URL=sqlite:///test.db \
+            -e FRONTEND_URL=http://localhost:3000 \
+            -p 8000:8000 \
+            renteasy-backend:latest
+          
+          # Wait for container to start
+          sleep 10
+          
+          # Test health endpoint
+          curl -f http://localhost:8000/healthz || exit 1
+          
+          # Clean up
+          docker stop test-backend
+          docker rm test-backend
+
+      - name: Test docker-compose
+        run: |
+          # Test docker-compose syntax
+          docker-compose config
+          
+          # Test docker-compose build
+          docker-compose build
+
+  # Acceptance Criteria Validation
+  acceptance-criteria:
+    name: Acceptance Criteria Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Check no test files in repo root
+        run: |
+          if ls test_*.py 2>/dev/null; then
+            echo "❌ Found test_*.py files in repo root"
+            exit 1
+          else
+            echo "✅ No test_*.py files in repo root"
+          fi
+
+      - name: Check app_simple.py moved to examples/
+        run: |
+          if [ -f app_simple.py ]; then
+            echo "❌ app_simple.py still exists in repo root"
+            exit 1
+          elif [ -f examples/app_simple.py ]; then
+            echo "✅ app_simple.py moved to examples/"
+          else
+            echo "⚠️  app_simple.py not found in examples/ (may have been removed)"
+          fi
+
+      - name: Check wsgi.py exists
+        run: |
+          if [ -f wsgi.py ]; then
+            echo "✅ wsgi.py exists"
+          else
+            echo "❌ wsgi.py not found"
+            exit 1
+          fi
+
+      - name: Check Dockerfile exists
+        run: |
+          if [ -f Dockerfile ]; then
+            echo "✅ Dockerfile exists"
+          else
+            echo "❌ Dockerfile not found"
+            exit 1
+          fi
+
+      - name: Check docker-compose.yml exists
+        run: |
+          if [ -f docker-compose.yml ]; then
+            echo "✅ docker-compose.yml exists"
+          else
+            echo "❌ docker-compose.yml not found"
+            exit 1
+          fi
+
+      - name: Check requirements.txt includes gunicorn and psycopg2-binary
+        run: |
+          if grep -q "gunicorn" backend/requirements.txt; then
+            echo "✅ gunicorn found in requirements.txt"
+          else
+            echo "❌ gunicorn not found in requirements.txt"
+            exit 1
+          fi
+          
+          if grep -q "psycopg2-binary" backend/requirements-prod.txt; then
+            echo "✅ psycopg2-binary found in requirements-prod.txt"
+          else
+            echo "❌ psycopg2-binary not found in requirements-prod.txt"
+            exit 1
+          fi
+
+      - name: Test ProductionConfig raises on missing env vars
+        run: |
+          cd backend
+          python -c "
+          from config import create_production_config
+          import os
+          
+          # Clear required env vars
+          for key in ['SECRET_KEY', 'JWT_SECRET_KEY', 'DATABASE_URL', 'FRONTEND_URL']:
+              os.environ.pop(key, None)
+          
+          try:
+              ProductionConfig = create_production_config()
+              config = ProductionConfig()
+              print('❌ ProductionConfig should raise RuntimeError for missing env vars')
+              exit(1)
+          except RuntimeError as e:
+              print('✅ ProductionConfig raises RuntimeError for missing env vars:', str(e))
+          "
+
+      - name: Test health endpoint
+        run: |
+          cd backend
+          # Start Flask app in background
+          python app.py &
+          APP_PID=$!
+          
+          # Wait for app to start
+          sleep 5
+          
+          # Test health endpoint
+          if curl -f http://localhost:8000/healthz; then
+            echo "✅ Health endpoint /healthz returns 200"
+          else
+            echo "❌ Health endpoint /healthz failed"
+            exit 1
+          fi
+          
+          # Clean up
+          kill $APP_PID
+
+      - name: Test Sentry integration (optional)
+        run: |
+          cd backend
+          python -c "
+          import os
+          os.environ['SENTRY_DSN'] = 'https://test@sentry.io/test'
+          
+          from app import create_app
+          app = create_app('production')
+          
+          # Test that app starts without error
+          print('✅ Sentry integration works (optional)')
+          "
+
+  # Deploy to Staging (on main branch)
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [lint, test-backend, security, docker, acceptance-criteria]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to staging
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          # Add your staging deployment steps here
+          # e.g., kubectl apply, docker-compose up, etc.
+
+  # Deploy to Production (manual trigger)
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [lint, test-backend, security, docker, acceptance-criteria]
+    if: github.event_name == 'workflow_dispatch'
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to production
+        run: |
+          echo "🚀 Deploying to production environment..."
+          # Add your production deployment steps here
