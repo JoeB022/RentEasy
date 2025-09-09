@@ -2,20 +2,11 @@ import pytest
 import tempfile
 import os
 from app import create_app, db
-from config import Config
-
-class TestConfig(Config):
-    """Test configuration class."""
-    TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
-    WTF_CSRF_ENABLED = False
-    SECRET_KEY = 'test-secret-key'
-    JWT_SECRET_KEY = 'test-jwt-secret-key'
+from config import TestingConfig
 
 def create_test_app():
-    """Create a test app with TestConfig."""
-    app = create_app()
-    app.config.from_object(TestConfig)
+    """Create a test app with TestingConfig."""
+    app = create_app("testing")
     return app
 
 @pytest.fixture
