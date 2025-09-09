@@ -4,6 +4,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from config import config
+import os
 
 # Initialize extensions
 db = SQLAlchemy()
@@ -20,6 +21,37 @@ def create_app(config_name="default"):
         # Handle factory functions like create_production_config
         config_class = config_class()
     app.config.from_object(config_class)
+    
+    # Setup logging
+    from utils.logger import setup_logger
+    setup_logger(
+        log_level=app.config.get('LOG_LEVEL', 'INFO'),
+        json_output=(app.config.get('LOG_FORMAT', 'text') == 'json'),
+        log_file=app.config.get('LOG_FILE')
+    )
+    
+    # Initialize Sentry if DSN is provided
+    sentry_dsn = os.environ.get('SENTRY_DSN')
+    if sentry_dsn:
+        try:
+            import sentry_sdk
+            from sentry_sdk.integrations.flask import FlaskIntegration
+            from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+            
+            sentry_sdk.init(
+                dsn=sentry_dsn,
+                integrations=[
+                    FlaskIntegration(),
+                    SqlalchemyIntegration(),
+                ],
+                traces_sample_rate=0.1,
+                environment=config_name,
+            )
+            app.logger.info("Sentry initialized successfully")
+        except ImportError:
+            app.logger.warning("Sentry SDK not available, skipping Sentry initialization")
+        except Exception as e:
+            app.logger.error(f"Failed to initialize Sentry: {e}")
     
     # Ensure JWT has the correct secret key
     if 'JWT_SECRET_KEY' in app.config:
@@ -38,6 +70,10 @@ def create_app(config_name="default"):
     # Create User model dynamically
     from models.user import create_user_model, UserRole
     User = create_user_model(db)
+    
+    # Setup logging middleware
+    from middleware.logging_middleware import setup_logging_middleware
+    setup_logging_middleware(app)
     
     # Register blueprints
     from routes.auth import auth_bp

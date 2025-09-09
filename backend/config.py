@@ -29,6 +29,8 @@ class BaseConfig:
     
     # Logging
     LOG_LEVEL = get_optional_env("LOG_LEVEL", "INFO")
+    LOG_FORMAT = get_optional_env("LOG_FORMAT", "text")  # text or json
+    LOG_FILE = get_optional_env("LOG_FILE", None)
 
 class DevelopmentConfig(BaseConfig):
     """Development configuration."""
@@ -78,13 +80,17 @@ def create_production_config():
         SESSION_COOKIE_HTTPONLY = True
         SESSION_COOKIE_SAMESITE = 'Lax'
         
-        # Database connection pooling for production
-        SQLALCHEMY_ENGINE_OPTIONS = {
-            "pool_size": 10,
-            "max_overflow": 20,
-            "pool_pre_ping": True,
-            "pool_recycle": 300
-        }
+    # Database connection pooling for production
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_size": 10,
+        "max_overflow": 20,
+        "pool_pre_ping": True,
+        "pool_recycle": 300
+    }
+    
+    # Production logging
+    LOG_FORMAT = "json"  # Always JSON in production
+    LOG_FILE = get_optional_env("LOG_FILE", "/var/log/renteasy/app.log")
     
     # Set required environment variables
     ProductionConfig.SECRET_KEY = get_required_env("SECRET_KEY")
