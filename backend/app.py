@@ -88,6 +88,8 @@ def create_app(config_name="default"):
     app.register_blueprint(protected_bp)
     app.register_blueprint(health_bp)
     
+    # CLI commands are registered via FlaskGroup in run_cli.py
+    
     # Make User model available globally
     app.User = User
     app.UserRole = UserRole
