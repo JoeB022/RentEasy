@@ -58,11 +58,24 @@ def verify_user_password(username, password):
             print(f"Invalid password for user {username}")
             return False
 
+def delete_user_by_username(username):
+    """Delete a user by username."""
+    with app.app_context():
+        user = User.query.filter_by(username=username).first()
+        if user:
+            db.session.delete(user)
+            db.session.commit()
+            print(f"User {username} deleted successfully!")
+            return True
+        else:
+            print(f"User {username} not found!")
+            return False
+
 if __name__ == "__main__":
     import sys
     
     if len(sys.argv) < 2:
-        print("Usage: python db_utils.py [init|drop|create|list|verify]")
+        print("Usage: python db_utils.py [init|drop|create|list|verify|delete]")
         sys.exit(1)
     
     command = sys.argv[1]
@@ -89,6 +102,12 @@ if __name__ == "__main__":
         username = sys.argv[2]
         password = sys.argv[3]
         verify_user_password(username, password)
+    elif command == "delete":
+        if len(sys.argv) < 3:
+            print("Usage: python db_utils.py delete <username>")
+            sys.exit(1)
+        username = sys.argv[2]
+        delete_user_by_username(username)
     else:
         print(f"Unknown command: {command}")
         sys.exit(1)

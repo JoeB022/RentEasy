@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
+import {
+  Edit3,
+  Save,
+  UserCircle,
+  Settings,
+  Trash2,
+  LogOut,
+  Bell,
+  Lock,
+} from 'lucide-react';
 
 const TenantProfile = ({ tenant }) => {
   const initialProfile =
@@ -14,8 +24,10 @@ const TenantProfile = ({ tenant }) => {
       location: '',
     };
 
-  const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState(initialProfile);
+  const [editMode, setEditMode] = useState(false);
+  const [activeTab, setActiveTab] = useState('profile');
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   useEffect(() => {
     if (tenant) setProfile(tenant);
@@ -32,12 +44,14 @@ const TenantProfile = ({ tenant }) => {
     try {
       localStorage.setItem('tenantProfile', JSON.stringify(profile));
       toast.success('Profile updated!');
-      setIsEditing(false);
+      setEditMode(false);
     } catch (err) {
       console.error(err);
       toast.error('Failed to update profile.');
     }
   };
+
+  const toggleEdit = () => setEditMode(!editMode);
 
   const getInitials = (name) =>
     name
@@ -50,35 +64,48 @@ const TenantProfile = ({ tenant }) => {
     <div className="max-w-4xl mx-auto pt-16 px-4">
       <div className="mb-8">
         <h2 className="text-3xl font-bold mb-2 text-[#003B4C]">
-          My Profile
+          Tenant Profile
         </h2>
         <div className="w-20 h-1 bg-gradient-to-r from-[#007C99] to-[#0099B3] rounded-full"></div>
       </div>
 
-      <div className="bg-gradient-to-br from-white to-[#f8fafc] shadow-xl rounded-2xl border border-white/50 backdrop-blur-sm">
-        {/* Header */}
-        <div className="flex justify-between items-center p-8 border-b border-white/50">
-          <h3 className="text-xl font-semibold text-[#003B4C] flex items-center gap-2">
-            <div className="w-6 h-6 bg-gradient-to-r from-[#007C99] to-[#0099B3] rounded-lg flex items-center justify-center">
-              <span className="text-white text-sm">👤</span>
-            </div>
-            Personal Information
-          </h3>
+      {/* Tabs */}
+      <div className="bg-gradient-to-r from-[#f9fafb] to-[#e5e7eb] p-6 rounded-2xl shadow-lg mb-8">
+        <h3 className="text-lg font-semibold text-[#003B4C] mb-4 flex items-center gap-2">
+          <div className="w-6 h-6 bg-gradient-to-r from-[#007C99] to-[#0099B3] rounded-lg flex items-center justify-center">
+            <UserCircle className="text-white" size={14} />
+          </div>
+          Profile Sections
+        </h3>
+        
+        <div className="flex gap-3">
           <button
-            onClick={() => setIsEditing(!isEditing)}
-            className={`px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 ${
-              isEditing 
-                ? 'bg-gradient-to-r from-gray-400 to-gray-500 text-white hover:from-gray-500 hover:to-gray-600 hover:shadow-lg' 
-                : 'bg-gradient-to-r from-[#007C99] to-[#0099B3] text-white hover:from-[#0088A3] hover:to-[#00A6C0] hover:shadow-lg'
+            className={`flex items-center gap-3 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 ${
+              activeTab === 'profile' 
+                ? 'bg-gradient-to-r from-[#003B4C] to-[#005A6E] text-white shadow-lg' 
+                : 'bg-white/80 text-[#003B4C] hover:bg-white hover:shadow-md'
             }`}
+            onClick={() => setActiveTab('profile')}
           >
-            {isEditing ? 'Cancel' : 'Edit Profile'}
+            <UserCircle size={18} /> Profile Info
+          </button>
+          <button
+            className={`flex items-center gap-3 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 ${
+              activeTab === 'settings' 
+                ? 'bg-gradient-to-r from-[#003B4C] to-[#005A6E] text-white shadow-lg' 
+                : 'bg-white/80 text-[#003B4C] hover:bg-white hover:shadow-md'
+            }`}
+            onClick={() => setActiveTab('settings')}
+          >
+            <Settings size={18} /> Settings
           </button>
         </div>
+      </div>
 
-        {/* Avatar */}
-        <div className="p-8">
-          <div className="flex items-center gap-6 mb-8">
+      {/* Avatar */}
+      {activeTab === 'profile' && (
+        <div className="bg-gradient-to-br from-white to-[#f8fafc] p-8 rounded-2xl shadow-xl border border-white/50 mb-8 backdrop-blur-sm">
+          <div className="flex items-center gap-6">
             <div className="relative">
               <div className="w-24 h-24 rounded-2xl bg-gradient-to-r from-[#003B4C] to-[#005A6E] text-white flex items-center justify-center text-2xl font-bold overflow-hidden shadow-lg border-4 border-white">
                 {profile.avatar ? (
@@ -96,30 +123,38 @@ const TenantProfile = ({ tenant }) => {
               </div>
             </div>
             <div>
-              <h4 className="text-2xl font-bold text-[#003B4C] mb-1">{profile.name}</h4>
-              <p className="text-[#007C99] font-medium text-lg">{profile.role}</p>
+              <h3 className="text-2xl font-bold text-[#003B4C] mb-1">{profile.name}</h3>
+              <p className="text-[#007C99] font-medium text-lg">Tenant</p>
               <div className="flex items-center gap-2 mt-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-green-600 font-medium">Active Tenant</span>
+                <span className="text-sm text-green-600 font-medium">Active Account</span>
               </div>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Form Fields */}
-          <form className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {/* Profile Form */}
+      {activeTab === 'profile' && (
+        <div className="bg-gradient-to-br from-white to-[#f8fafc] shadow-xl p-8 rounded-2xl border border-white/50 backdrop-blur-sm">
+          <h3 className="text-xl font-bold mb-6 text-[#003B4C] flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-[#007C99] to-[#0099B3] rounded-lg flex items-center justify-center">
+              <Edit3 className="text-white" size={16} />
+            </div>
+            Personal Information
+          </h3>
+          
+          <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label htmlFor="name" className="block text-sm font-medium text-[#003B4C]">
-                Full Name
-              </label>
+              <label className="block text-sm font-medium text-[#003B4C]">Full Name</label>
               <input
-                id="name"
-                name="name"
                 type="text"
+                name="name"
                 value={profile.name}
                 onChange={handleChange}
-                disabled={!isEditing}
-                className={`mt-1 w-full px-4 py-3 border-2 rounded-xl text-sm transition-all duration-300 ${
-                  isEditing 
+                disabled={!editMode}
+                className={`mt-1 block w-full border-2 px-4 py-3 rounded-xl transition-all duration-300 ${
+                  editMode 
                     ? 'border-gray-200 focus:border-[#007C99] focus:outline-none focus:ring-2 focus:ring-[#007C99]/20 hover:border-[#007C99]/50' 
                     : 'border-gray-100 bg-gray-50 cursor-not-allowed'
                 }`}
@@ -127,18 +162,15 @@ const TenantProfile = ({ tenant }) => {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-[#003B4C]">
-                Email Address
-              </label>
+              <label className="block text-sm font-medium text-[#003B4C]">Email</label>
               <input
-                id="email"
-                name="email"
                 type="email"
+                name="email"
                 value={profile.email}
                 onChange={handleChange}
-                disabled={!isEditing}
-                className={`mt-1 w-full px-4 py-3 border-2 rounded-xl text-sm transition-all duration-300 ${
-                  isEditing 
+                disabled={!editMode}
+                className={`mt-1 block w-full border-2 px-4 py-3 rounded-xl transition-all duration-300 ${
+                  editMode 
                     ? 'border-gray-200 focus:border-[#007C99] focus:outline-none focus:ring-2 focus:ring-[#007C99]/20 hover:border-[#007C99]/50' 
                     : 'border-gray-100 bg-gray-50 cursor-not-allowed'
                 }`}
@@ -146,18 +178,15 @@ const TenantProfile = ({ tenant }) => {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="phone" className="block text-sm font-medium text-[#003B4C]">
-                Phone Number
-              </label>
+              <label className="block text-sm font-medium text-[#003B4C]">Phone</label>
               <input
-                id="phone"
+                type="text"
                 name="phone"
-                type="tel"
                 value={profile.phone}
                 onChange={handleChange}
-                disabled={!isEditing}
-                className={`mt-1 w-full px-4 py-3 border-2 rounded-xl text-sm transition-all duration-300 ${
-                  isEditing 
+                disabled={!editMode}
+                className={`mt-1 block w-full border-2 px-4 py-3 rounded-xl transition-all duration-300 ${
+                  editMode 
                     ? 'border-gray-200 focus:border-[#007C99] focus:outline-none focus:ring-2 focus:ring-[#007C99]/20 hover:border-[#007C99]/50' 
                     : 'border-gray-100 bg-gray-50 cursor-not-allowed'
                 }`}
@@ -165,59 +194,125 @@ const TenantProfile = ({ tenant }) => {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="role" className="block text-sm font-medium text-[#003B4C]">
-                Role
-              </label>
+              <label className="block text-sm font-medium text-[#003B4C]">Location</label>
               <input
                 type="text"
-                id="role"
-                name="role"
-                value="Tenant"
-                readOnly
-                className="mt-1 w-full px-4 py-3 border-2 border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100 text-sm rounded-xl cursor-not-allowed"
-              />
-            </div>
-
-            <div className="sm:col-span-2 space-y-2">
-              <label htmlFor="location" className="block text-sm font-medium text-[#003B4C]">
-                Preferred Location
-              </label>
-              <input
-                id="location"
                 name="location"
-                type="text"
                 value={profile.location}
                 onChange={handleChange}
-                disabled={!isEditing}
-                className={`mt-1 w-full px-4 py-3 border-2 rounded-xl text-sm transition-all duration-300 ${
-                  isEditing 
+                disabled={!editMode}
+                className={`mt-1 block w-full border-2 px-4 py-3 rounded-xl transition-all duration-300 ${
+                  editMode 
                     ? 'border-gray-200 focus:border-[#007C99] focus:outline-none focus:ring-2 focus:ring-[#007C99]/20 hover:border-[#007C99]/50' 
                     : 'border-gray-100 bg-gray-50 cursor-not-allowed'
                 }`}
               />
             </div>
-          </form>
+          </div>
 
-          {isEditing && (
-            <div className="mt-8 pt-6 border-t border-white/50">
-              <div className="flex justify-end gap-4">
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="px-6 py-3 border-2 border-[#007C99] text-[#007C99] rounded-xl font-medium hover:bg-[#007C99] hover:text-white transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="bg-gradient-to-r from-[#003B4C] to-[#005A6E] text-white px-8 py-3 rounded-xl font-medium hover:from-[#004A5F] hover:to-[#006B8A] transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
-                >
-                  Save Changes
-                </button>
+          <div className="mt-8">
+            <button
+              type="button"
+              onClick={toggleEdit}
+              className={`inline-flex items-center gap-2 px-8 py-3 text-sm font-medium rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg ${
+                editMode 
+                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700' 
+                  : 'bg-gradient-to-r from-[#003B4C] to-[#005A6E] text-white hover:from-[#004A5F] hover:to-[#006B8A]'
+              }`}
+            >
+              {editMode ? <Save size={16} /> : <Edit3 size={16} />}
+              {editMode ? 'Save Changes' : 'Edit Profile'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Settings */}
+      {activeTab === 'settings' && (
+        <div className="space-y-8">
+          {/* Password Change */}
+          <div className="bg-gradient-to-br from-white to-[#f8fafc] shadow-xl p-8 rounded-2xl border border-white/50 backdrop-blur-sm">
+            <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-[#003B4C]">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#007C99] to-[#0099B3] rounded-lg flex items-center justify-center">
+                <Lock className="text-white" size={16} />
+              </div>
+              Change Password
+            </h3>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[#003B4C]">Current Password</label>
+                <input 
+                  type="password" 
+                  placeholder="Enter current password" 
+                  className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:border-[#007C99] focus:outline-none focus:ring-2 focus:ring-[#007C99]/20 transition-all duration-300 hover:border-[#007C99]/50" 
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[#003B4C]">New Password</label>
+                <input 
+                  type="password" 
+                  placeholder="Enter new password" 
+                  className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:border-[#007C99] focus:outline-none focus:ring-2 focus:ring-[#007C99]/20 transition-all duration-300 hover:border-[#007C99]/50" 
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[#003B4C]">Confirm Password</label>
+                <input 
+                  type="password" 
+                  placeholder="Confirm new password" 
+                  className="w-full border-2 border-gray-200 px-4 py-3 rounded-xl focus:border-[#007C99] focus:outline-none focus:ring-2 focus:ring-[#007C99]/20 transition-all duration-300 hover:border-[#007C99]/50" 
+                />
               </div>
             </div>
-          )}
+            <button className="mt-6 bg-gradient-to-r from-[#003B4C] to-[#005A6E] text-white px-6 py-3 rounded-xl text-sm font-medium hover:from-[#004A5F] hover:to-[#006B8A] transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
+              Update Password
+            </button>
+          </div>
+
+          {/* Notifications */}
+          <div className="bg-gradient-to-br from-white to-[#f8fafc] shadow-xl p-8 rounded-2xl border border-white/50 backdrop-blur-sm">
+            <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-[#003B4C]">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#007C99] to-[#0099B3] rounded-lg flex items-center justify-center">
+                <Bell className="text-white" size={16} />
+              </div>
+              Notifications
+            </h3>
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={notificationsEnabled}
+                onChange={() => setNotificationsEnabled(!notificationsEnabled)}
+                className="w-5 h-5 text-[#007C99] bg-gray-100 border-gray-300 rounded focus:ring-[#007C99] focus:ring-2 transition-all duration-300"
+              />
+              <span className="text-[#003B4C] font-medium group-hover:text-[#007C99] transition-colors duration-300">
+                Enable rent and service alerts
+              </span>
+            </label>
+            <p className="text-sm text-gray-600 mt-2 ml-8">
+              Receive notifications about rent payments, service requests, and important updates
+            </p>
+          </div>
+
+          {/* Logout & Delete */}
+          <div className="bg-gradient-to-br from-white to-[#f8fafc] shadow-xl p-8 rounded-2xl border border-white/50 backdrop-blur-sm">
+            <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-[#003B4C]">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#007C99] to-[#0099B3] rounded-lg flex items-center justify-center">
+                <span className="text-white text-sm">⚙️</span>
+              </div>
+              Account Actions
+            </h3>
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button className="flex items-center gap-2 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg border border-red-200">
+                <Trash2 size={16} /> Delete Account
+              </button>
+              <button className="flex items-center gap-2 text-[#003B4C] hover:text-[#005A6E] bg-[#003B4C]/10 hover:bg-[#003B4C]/20 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg border border-[#003B4C]/20">
+                <LogOut size={16} /> Logout
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

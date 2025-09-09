@@ -76,11 +76,9 @@ const LandlordProfile = () => {
         <div className="bg-gradient-to-br from-white to-[#f8fafc] p-8 rounded-2xl shadow-xl border border-white/50 mb-8 backdrop-blur-sm">
           <div className="flex items-center gap-6">
             <div className="relative">
-              <img
-                src="https://api.dicebear.com/8.x/initials/svg?seed=Joe%20Brian"
-                alt="Profile"
-                className="w-24 h-24 rounded-2xl border-4 border-white shadow-lg"
-              />
+              <div className="w-24 h-24 rounded-2xl bg-gradient-to-r from-[#003B4C] to-[#005A6E] text-white flex items-center justify-center text-2xl font-bold overflow-hidden shadow-lg border-4 border-white">
+                {profile.name ? profile.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'JB'}
+              </div>
               <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-gradient-to-r from-[#007C99] to-[#0099B3] rounded-full flex items-center justify-center">
                 <span className="text-white text-xs">👑</span>
               </div>
