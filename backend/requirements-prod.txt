@@ -1,0 +1,25 @@
+# Production dependencies for RentEasy backend
+# Install with: pip install -r requirements-prod.txt
+
+# WSGI Server
+gunicorn==21.2.0
+
+# Database drivers
+psycopg2-binary==2.9.9
+
+# Logging and monitoring
+loguru==0.7.2
+sentry-sdk[flask]==1.38.0
+
+# Caching and session storage
+redis==5.0.1
+
+# Security and rate limiting
+Flask-Limiter==3.5.0
+Flask-Talisman==1.1.0
+
+# Optional: Caching
+Flask-Caching==2.1.0
+
+# Include base requirements
+-r requirements.txt
