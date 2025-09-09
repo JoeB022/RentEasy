@@ -7,11 +7,18 @@ class UserRole(enum.Enum):
     LANDLORD = "landlord"
     ADMIN = "admin"
 
+# Global variable to store the User model
+_user_model = None
+
 def create_user_model(db):
     """Create the User model dynamically to avoid circular imports."""
+    global _user_model
+    
+    if _user_model is not None:
+        return _user_model
+    
     class User(db.Model):
         __tablename__ = 'users'
-        __table_args__ = {'extend_existing': True}
 
         id = db.Column(db.Integer, primary_key=True, autoincrement=True)
         username = db.Column(db.String(80), unique=True, nullable=False, index=True)
@@ -40,6 +47,7 @@ def create_user_model(db):
                 'created_at': self.created_at.isoformat() if self.created_at else None
             }
     
+    _user_model = User
     return User
 
 # Create a placeholder class for imports
