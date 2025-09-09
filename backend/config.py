@@ -20,6 +20,14 @@ class BaseConfig:
     # Database configuration
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
+    # Database engine options for connection pooling
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+        "pool_size": 5,
+        "max_overflow": 10
+    }
+    
     # JWT configuration
     JWT_ACCESS_TOKEN_EXPIRES = 3600  # 1 hour
     JWT_REFRESH_TOKEN_EXPIRES = 2592000  # 30 days
@@ -49,8 +57,16 @@ class DevelopmentConfig(BaseConfig):
     SECRET_KEY = get_optional_env("SECRET_KEY", "dev-secret-key-change-in-production")
     JWT_SECRET_KEY = get_optional_env("JWT_SECRET_KEY", "jwt-secret-key-change-in-production")
     
-    # Development database
+    # Development database (SQLite)
     SQLALCHEMY_DATABASE_URI = get_optional_env("DATABASE_URL", "sqlite:///app.db")
+    
+    # SQLite-specific engine options (no pooling needed)
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+        "pool_size": 1,
+        "max_overflow": 0
+    }
     
     # Development CORS
     CORS_ORIGINS = [
@@ -70,8 +86,16 @@ class TestingConfig(BaseConfig):
     SECRET_KEY = "test-secret-key"
     JWT_SECRET_KEY = "test-jwt-secret-key"
     
-    # Test database
+    # Test database (in-memory SQLite)
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    
+    # SQLite-specific engine options for testing
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+        "pool_size": 1,
+        "max_overflow": 0
+    }
     
     # Test CORS
     CORS_ORIGINS = ["http://localhost:3000", "http://localhost:5173"]
@@ -88,12 +112,14 @@ def create_production_config():
         SESSION_COOKIE_HTTPONLY = True
         SESSION_COOKIE_SAMESITE = 'Lax'
         
-    # Database connection pooling for production
+    # PostgreSQL connection pooling for production
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_size": 10,
         "max_overflow": 20,
         "pool_pre_ping": True,
-        "pool_recycle": 300
+        "pool_recycle": 300,
+        "pool_timeout": 30,
+        "pool_reset_on_return": "commit"
     }
     
     # Production logging

@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: renteasy-postgres
+    environment:
+      POSTGRES_DB: renteasy
+      POSTGRES_USER: renteasy_user
+      POSTGRES_PASSWORD: renteasy_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U renteasy_user -d renteasy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - renteasy-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: renteasy-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - renteasy-network
+
+  # pgAdmin (Database Management)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: renteasy-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@renteasy.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - renteasy-network
+
+  # Backend Application (Development)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: renteasy-backend
+    environment:
+      FLASK_ENV: development
+      DATABASE_URL: postgresql://renteasy_user:renteasy_password@postgres:5432/renteasy
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: dev-secret-key-change-in-production
+      JWT_SECRET_KEY: dev-jwt-secret-key-change-in-production
+      FRONTEND_URL: http://localhost:5173
+      LOG_LEVEL: INFO
+      LOG_FORMAT: text
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app/backend
+      - ./wsgi.py:/app/wsgi.py
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - renteasy-network
+    command: >
+      sh -c "
+        cd backend &&
+        python -m flask db upgrade &&
+        python app.py
+      "
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  renteasy-network:
+    driver: bridge

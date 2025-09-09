@@ -25,14 +25,20 @@ def readiness_check():
     try:
         # Check database connectivity
         from app import db
-        db.session.execute('SELECT 1')
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
+        
+        # Get database health information
+        from utils.database import get_database_health
+        db_health = get_database_health()
         
         return jsonify({
             "status": "ready",
             "service": "renteasy-backend",
             "checks": {
                 "database": "ok"
-            }
+            },
+            "database_health": db_health
         }), 200
     except Exception as e:
         logger.error(f"Readiness check failed: {e}")
