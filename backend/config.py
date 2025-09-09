@@ -66,43 +66,41 @@ class TestingConfig(BaseConfig):
     # Test CORS
     CORS_ORIGINS = ["http://localhost:3000", "http://localhost:5173"]
 
-class ProductionConfig(BaseConfig):
-    """Production configuration with strict security requirements."""
-    DEBUG = False
-    SQLALCHEMY_ECHO = False
-    
-    # Security settings
-    SESSION_COOKIE_SECURE = True
-    SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'Lax'
-    
-    # Database connection pooling for production
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_size": 10,
-        "max_overflow": 20,
-        "pool_pre_ping": True,
-        "pool_recycle": 300
-    }
-    
-    def __init__(self):
-        """Initialize production config with required environment variables."""
-        # Production secrets (REQUIRED - no fallbacks)
-        self.SECRET_KEY = get_required_env("SECRET_KEY")
-        self.JWT_SECRET_KEY = get_required_env("JWT_SECRET_KEY")
+def create_production_config():
+    """Create production configuration with required environment variables."""
+    class ProductionConfig(BaseConfig):
+        """Production configuration with strict security requirements."""
+        DEBUG = False
+        SQLALCHEMY_ECHO = False
         
-        # Production database (REQUIRED)
-        self.SQLALCHEMY_DATABASE_URI = get_required_env("DATABASE_URL")
+        # Security settings
+        SESSION_COOKIE_SECURE = True
+        SESSION_COOKIE_HTTPONLY = True
+        SESSION_COOKIE_SAMESITE = 'Lax'
         
-        # Production CORS (restrictive)
-        self.CORS_ORIGINS = [
-            get_required_env("FRONTEND_URL"),
-            get_optional_env("ADMIN_URL")
-        ]
+        # Database connection pooling for production
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_size": 10,
+            "max_overflow": 20,
+            "pool_pre_ping": True,
+            "pool_recycle": 300
+        }
+    
+    # Set required environment variables
+    ProductionConfig.SECRET_KEY = get_required_env("SECRET_KEY")
+    ProductionConfig.JWT_SECRET_KEY = get_required_env("JWT_SECRET_KEY")
+    ProductionConfig.SQLALCHEMY_DATABASE_URI = get_required_env("DATABASE_URL")
+    ProductionConfig.CORS_ORIGINS = [
+        get_required_env("FRONTEND_URL"),
+        get_optional_env("ADMIN_URL")
+    ]
+    
+    return ProductionConfig
 
 # Configuration dictionary
 config = {
     "development": DevelopmentConfig,
     "testing": TestingConfig,
-    "production": ProductionConfig,
+    "production": create_production_config,
     "default": DevelopmentConfig
 }

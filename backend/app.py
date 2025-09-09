@@ -15,7 +15,11 @@ def create_app(config_name="default"):
     app = Flask(__name__)
     
     # Load configuration
-    app.config.from_object(config[config_name])
+    config_class = config[config_name]
+    if callable(config_class):
+        # Handle factory functions like create_production_config
+        config_class = config_class()
+    app.config.from_object(config_class)
     
     # Ensure JWT has the correct secret key
     if 'JWT_SECRET_KEY' in app.config:
