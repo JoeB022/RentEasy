@@ -21,5 +21,8 @@ Flask-Talisman==1.1.0
 # Optional: Caching
 Flask-Caching==2.1.0
 
+# System monitoring
+psutil==5.9.6
+
 # Include base requirements
 -r requirements.txt

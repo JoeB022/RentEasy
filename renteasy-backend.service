@@ -1,0 +1,51 @@
+[Unit]
+Description=RentEasy Backend API Service
+Documentation=https://github.com/your-org/renteasy
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=notify
+# The user/group to run as
+User=renteasy
+Group=renteasy
+
+# Working directory
+WorkingDirectory=/opt/renteasy/backend
+
+# Environment file
+EnvironmentFile=/opt/renteasy/.env
+
+# The command to run
+ExecStart=/opt/renteasy/venv/bin/gunicorn --config gunicorn.conf.py wsgi:app
+ExecReload=/bin/kill -s HUP $MAINPID
+
+# Restart policy
+Restart=always
+RestartSec=3
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/renteasy/logs /opt/renteasy/instance
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=renteasy-backend
+
+# Health check
+ExecStartPost=/bin/sleep 10
+ExecStartPost=/bin/curl -f http://localhost:8000/healthz || exit 1
+
+[Install]
+WantedBy=multi-user.target
