@@ -32,7 +32,7 @@ const PendingUserApprovals = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`${API_BASE_URL}/admin/users/pending`, {
+      const response = await fetch(`${API_BASE_URL}/auth/admin/pending-users`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -45,7 +45,7 @@ const PendingUserApprovals = () => {
       }
 
       const data = await response.json();
-      setPendingUsers(data.users || []);
+      setPendingUsers(data.pending_users || []);
     } catch (err) {
       console.error('Error fetching pending users:', err);
       setError(err.message);
@@ -63,8 +63,8 @@ const PendingUserApprovals = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/approve`, {
-        method: 'PUT',
+      const response = await fetch(`${API_BASE_URL}/auth/admin/approve-user/${userId}`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -76,7 +76,7 @@ const PendingUserApprovals = () => {
       }
 
       const data = await response.json();
-      toast.success(`✅ ${data.user.username} has been approved successfully`);
+      toast.success(`✅ ${data.message}`);
       
       // Remove the approved user from the list
       setPendingUsers(prev => prev.filter(user => user.id !== userId));
@@ -94,8 +94,8 @@ const PendingUserApprovals = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/reject`, {
-        method: 'PUT',
+      const response = await fetch(`${API_BASE_URL}/auth/admin/reject-user/${userId}`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

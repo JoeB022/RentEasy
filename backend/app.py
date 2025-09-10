@@ -65,9 +65,16 @@ def create_app(config_name="default"):
     jwt.init_app(app)
     migrate.init_app(app, db)
     
-    # Create User model dynamically
-    from models.user import create_user_model, UserRole
+    # Create models dynamically
+    from models.user import create_user_model, UserRole, ApprovalStatus
+    from models.property import create_property_model
+    from models.lease import create_lease_model, LeaseStatus
+    from models.payment import create_payment_model, PaymentStatus, PaymentMethod
+    
     User = create_user_model(db)
+    Property = create_property_model(db)
+    Lease = create_lease_model(db)
+    Payment = create_payment_model(db)
     
     # Setup logging middleware
     from middleware.logging_middleware import setup_logging_middleware
@@ -81,16 +88,26 @@ def create_app(config_name="default"):
     from routes.auth import auth_bp
     from routes.protected import protected_bp
     from routes.health import health_bp
+    from routes.properties import properties_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(protected_bp)
     app.register_blueprint(health_bp)
+    app.register_blueprint(properties_bp)
     
     # CLI commands are registered via FlaskGroup in run_cli.py
     
-    # Make User model available globally
+    # Make models and db available globally
     app.User = User
     app.UserRole = UserRole
+    app.ApprovalStatus = ApprovalStatus
+    app.Property = Property
+    app.Lease = Lease
+    app.LeaseStatus = LeaseStatus
+    app.Payment = Payment
+    app.PaymentStatus = PaymentStatus
+    app.PaymentMethod = PaymentMethod
+    app.db = db
     
     return app
 
@@ -101,6 +118,13 @@ app = create_app()
 with app.app_context():
     User = app.User
     UserRole = app.UserRole
+    ApprovalStatus = app.ApprovalStatus
+    Property = app.Property
+    Lease = app.Lease
+    LeaseStatus = app.LeaseStatus
+    Payment = app.Payment
+    PaymentStatus = app.PaymentStatus
+    PaymentMethod = app.PaymentMethod
     # Initialize database tables
     db.create_all()
 

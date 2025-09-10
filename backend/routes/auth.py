@@ -14,7 +14,7 @@ from werkzeug.security import generate_password_hash
 from datetime import timedelta
 import json
 
-from models.user import UserRole
+from models.user import UserRole, ApprovalStatus
 from auth.utils import hash_password, verify_password
 
 # Create Blueprint
@@ -28,7 +28,8 @@ def register():
     Expected JSON payload:
     {
         "username": "string",
-        "email": "string", 
+        "email": "string",
+        "phone": "string",
         "password": "string",
         "role": "tenant|landlord|admin" (optional, defaults to tenant)
     }
@@ -44,13 +45,14 @@ def register():
             return jsonify({'error': 'No data provided'}), 400
         
         # Validate required fields
-        required_fields = ['username', 'email', 'password']
+        required_fields = ['username', 'email', 'phone', 'password']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'Missing required field: {field}'}), 400
         
         username = data['username'].strip()
         email = data['email'].strip().lower()
+        phone = data['phone'].strip()
         password = data['password']
         role_str = data.get('role', 'tenant').lower()
         
@@ -61,6 +63,10 @@ def register():
         # Validate email format
         if '@' not in email or '.' not in email:
             return jsonify({'error': 'Invalid email format'}), 400
+        
+        # Validate phone format (basic validation)
+        if not phone or len(phone) < 10:
+            return jsonify({'error': 'Please enter a valid phone number'}), 400
         
         # Validate password strength
         if len(password) < 6:
@@ -88,14 +94,14 @@ def register():
         new_user = User(
             username=username,
             email=email,
+            phone=phone,
             password=hashed_password,
             role=role
         )
         
         # Save to database
-        from app import db
-        db.session.add(new_user)
-        db.session.commit()
+        current_app.db.session.add(new_user)
+        current_app.db.session.commit()
         
         # Generate tokens
         token_identity = json.dumps({
@@ -114,24 +120,41 @@ def register():
             expires_delta=timedelta(days=30)
         )
         
-        return jsonify({
-            'message': 'User registered successfully',
-            'user': {
-                'id': new_user.id,
-                'username': new_user.username,
-                'email': new_user.email,
-                'role': new_user.role.value,
-                'created_at': new_user.created_at.isoformat()
-            },
-            'tokens': {
-                'access_token': access_token,
-                'refresh_token': refresh_token
-            }
-        }), 201
+        # Check if user needs approval
+        if new_user.role == UserRole.ADMIN:
+            # Admins get immediate access
+            return jsonify({
+                'message': 'Admin user registered successfully',
+                'user': {
+                    'id': new_user.id,
+                    'username': new_user.username,
+                    'email': new_user.email,
+                    'role': new_user.role.value,
+                    'approval_status': new_user.approval_status.value,
+                    'created_at': new_user.created_at.isoformat()
+                },
+                'tokens': {
+                    'access_token': access_token,
+                    'refresh_token': refresh_token
+                }
+            }), 201
+        else:
+            # Regular users need approval
+            return jsonify({
+                'message': 'User registered successfully. Your account is pending admin approval.',
+                'user': {
+                    'id': new_user.id,
+                    'username': new_user.username,
+                    'email': new_user.email,
+                    'role': new_user.role.value,
+                    'approval_status': new_user.approval_status.value,
+                    'created_at': new_user.created_at.isoformat()
+                },
+                'requires_approval': True
+            }), 201
         
     except Exception as e:
-        from app import db
-        db.session.rollback()
+        current_app.db.session.rollback()
         return jsonify({'error': 'Registration failed', 'details': str(e)}), 500
 
 @auth_bp.route('/login', methods=['POST'])
@@ -175,6 +198,13 @@ def login():
         # Verify password
         if not verify_password(password, user.password):
             return jsonify({'error': 'Invalid credentials'}), 401
+        
+        # Check approval status
+        if user.approval_status != ApprovalStatus.APPROVED:
+            if user.approval_status == ApprovalStatus.PENDING:
+                return jsonify({'error': 'Your account is pending admin approval. Please wait for approval before logging in.'}), 403
+            elif user.approval_status == ApprovalStatus.REJECTED:
+                return jsonify({'error': 'Your account has been rejected. Please contact support.'}), 403
         
         # Generate tokens
         token_identity = json.dumps({
@@ -253,7 +283,7 @@ def delete_account():
         # Parse user info from token
         user_info = json.loads(current_user)
         username = user_info.get('username')
-        user_id = user_info.get('id')
+        user_id = user_info.get('user_id')
         
         if not username or not user_id:
             return jsonify({'error': 'Invalid user information'}), 400
@@ -270,16 +300,22 @@ def delete_account():
         deleted_username = user.username
         deleted_email = user.email
         
+        # Delete all properties owned by this user first
+        Property = current_app.Property
+        user_properties = Property.query.filter_by(landlord_id=user.id).all()
+        for property in user_properties:
+            current_app.db.session.delete(property)
+        
         # Delete the user
-        db.session.delete(user)
-        db.session.commit()
+        current_app.db.session.delete(user)
+        current_app.db.session.commit()
         
         return jsonify({
             'message': f'Account for {deleted_username} ({deleted_email}) has been deleted successfully'
         }), 200
         
     except Exception as e:
-        db.session.rollback()
+        current_app.db.session.rollback()
         return jsonify({'error': 'Failed to delete account', 'details': str(e)}), 500
 
 @auth_bp.route('/me', methods=['GET'])
@@ -369,3 +405,121 @@ def validate_token():
         
     except Exception as e:
         return jsonify({'error': 'Token validation failed', 'details': str(e)}), 500
+
+@auth_bp.route('/admin/pending-users', methods=['GET'])
+@jwt_required()
+def get_pending_users():
+    """
+    Get list of users pending approval.
+    Requires admin role.
+    """
+    try:
+        # Get current user from token
+        current_user = get_jwt_identity()
+        if not current_user:
+            return jsonify({'error': 'No valid token found'}), 401
+        
+        # Parse user info from token
+        user_info = json.loads(current_user)
+        user_role = user_info.get('role')
+        
+        # Check if user is admin
+        if user_role != 'admin':
+            return jsonify({'error': 'Admin access required'}), 403
+        
+        # Get pending users
+        User = current_app.User
+        pending_users = User.query.filter_by(approval_status=ApprovalStatus.PENDING).all()
+        
+        return jsonify({
+            'pending_users': [user.to_dict() for user in pending_users]
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': 'Failed to get pending users', 'details': str(e)}), 500
+
+@auth_bp.route('/admin/approve-user/<int:user_id>', methods=['POST'])
+@jwt_required()
+def approve_user(user_id):
+    """
+    Approve a user account.
+    Requires admin role.
+    """
+    try:
+        # Get current user from token
+        current_user = get_jwt_identity()
+        if not current_user:
+            return jsonify({'error': 'No valid token found'}), 401
+        
+        # Parse user info from token
+        user_info = json.loads(current_user)
+        user_role = user_info.get('role')
+        
+        # Check if user is admin
+        if user_role != 'admin':
+            return jsonify({'error': 'Admin access required'}), 403
+        
+        # Find the user to approve
+        User = current_app.User
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        if user.approval_status != ApprovalStatus.PENDING:
+            return jsonify({'error': 'User is not pending approval'}), 400
+        
+        # Approve the user
+        user.approval_status = ApprovalStatus.APPROVED
+        current_app.db.session.commit()
+        
+        return jsonify({
+            'message': f'User {user.username} has been approved successfully',
+            'user': user.to_dict()
+        }), 200
+        
+    except Exception as e:
+        current_app.db.session.rollback()
+        return jsonify({'error': 'Failed to approve user', 'details': str(e)}), 500
+
+@auth_bp.route('/admin/reject-user/<int:user_id>', methods=['POST'])
+@jwt_required()
+def reject_user(user_id):
+    """
+    Reject a user account.
+    Requires admin role.
+    """
+    try:
+        # Get current user from token
+        current_user = get_jwt_identity()
+        if not current_user:
+            return jsonify({'error': 'No valid token found'}), 401
+        
+        # Parse user info from token
+        user_info = json.loads(current_user)
+        user_role = user_info.get('role')
+        
+        # Check if user is admin
+        if user_role != 'admin':
+            return jsonify({'error': 'Admin access required'}), 403
+        
+        # Find the user to reject
+        User = current_app.User
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        if user.approval_status != ApprovalStatus.PENDING:
+            return jsonify({'error': 'User is not pending approval'}), 400
+        
+        # Reject the user
+        user.approval_status = ApprovalStatus.REJECTED
+        current_app.db.session.commit()
+        
+        return jsonify({
+            'message': f'User {user.username} has been rejected',
+            'user': user.to_dict()
+        }), 200
+        
+    except Exception as e:
+        current_app.db.session.rollback()
+        return jsonify({'error': 'Failed to reject user', 'details': str(e)}), 500

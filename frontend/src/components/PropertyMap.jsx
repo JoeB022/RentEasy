@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Navigation, AlertCircle } from 'lucide-react';
+import { MapPin, Navigation, AlertCircle, Search, X } from 'lucide-react';
 
 const PropertyMap = ({ 
   latitude, 
@@ -12,6 +12,9 @@ const PropertyMap = ({
   const [error, setError] = useState('');
   const [mapUrl, setMapUrl] = useState('');
   const [coordinates, setCoordinates] = useState({ lat: latitude, lng: longitude });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearch, setShowSearch] = useState(false);
   const mapRef = useRef(null);
 
   // Update map URL when coordinates change
@@ -97,6 +100,52 @@ const PropertyMap = ({
     }
   };
 
+  const searchLocation = async (query) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`
+      );
+      const results = await response.json();
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Location search failed:', error);
+      setError('Failed to search for location. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSearchResult = (result) => {
+    const lat = parseFloat(result.lat);
+    const lng = parseFloat(result.lon);
+    setCoordinates({ lat, lng });
+    setSearchQuery(result.display_name);
+    setSearchResults([]);
+    setShowSearch(false);
+    
+    if (onLocationChange) {
+      onLocationChange(lat, lng, result.display_name);
+    }
+  };
+
+  const handleSearchInputChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    // Debounce search
+    const timeoutId = setTimeout(() => {
+      searchLocation(query);
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
+  };
+
   const handleManualLocation = () => {
     // Allow user to click on map to set location manually
     // For now, we'll just clear the error
@@ -105,21 +154,72 @@ const PropertyMap = ({
 
   return (
     <div className={`space-y-4 ${className}`}>
+      {/* Location Search */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Search className="w-4 h-4 text-gray-500" />
+          <label className="text-sm font-medium text-gray-700">
+            Search for Property Location
+          </label>
+        </div>
+        
+        <div className="relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={handleSearchInputChange}
+            placeholder="Enter property address, city, or landmark..."
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          {isLoading && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+        </div>
+
+        {/* Search Results */}
+        {searchResults.length > 0 && (
+          <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            {searchResults.map((result, index) => (
+              <button
+                key={index}
+                onClick={() => handleSearchResult(result)}
+                className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+              >
+                <div className="font-medium text-gray-900">{result.display_name}</div>
+                {result.address && (
+                  <div className="text-sm text-gray-500">
+                    {result.address.city || result.address.town || result.address.village || ''}
+                    {result.address.state && `, ${result.address.state}`}
+                    {result.address.country && `, ${result.address.country}`}
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Location Controls */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <button
           type="button"
           onClick={getCurrentLocation}
           disabled={isLoading}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
         >
           {isLoading ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
             <Navigation className="w-4 h-4" />
           )}
-          {isLoading ? 'Getting Location...' : 'Set Location'}
+          {isLoading ? 'Getting Location...' : 'Use My Current Location'}
         </button>
+
+        <div className="text-sm text-gray-500">
+          or search for the property location above
+        </div>
 
         {coordinates.lat && coordinates.lng && (
           <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -130,6 +230,30 @@ const PropertyMap = ({
           </div>
         )}
       </div>
+
+      {/* Clear Location Button */}
+      {coordinates.lat && coordinates.lng && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+            ✓ Location set successfully
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setCoordinates({ lat: null, lng: null });
+              setSearchQuery('');
+              setSearchResults([]);
+              if (onLocationChange) {
+                onLocationChange(null, null, '');
+              }
+            }}
+            className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors duration-200"
+          >
+            <X className="w-4 h-4" />
+            Clear Location
+          </button>
+        </div>
+      )}
 
       {/* Error Message */}
       {error && (
@@ -142,7 +266,7 @@ const PropertyMap = ({
               onClick={handleManualLocation}
               className="mt-2 text-red-600 hover:text-red-800 underline text-sm"
             >
-              Enter location manually
+              Search for location instead
             </button>
           </div>
         </div>
@@ -169,7 +293,7 @@ const PropertyMap = ({
             />
             <div className="absolute inset-0 pointer-events-none">
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <div className="w-6 h-6 bg-primary-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center">
+                <div className="w-6 h-6 bg-blue-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center">
                   <MapPin className="w-4 h-4 text-white" />
                 </div>
               </div>

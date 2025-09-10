@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import SkeletonCard from './SkeletonCard';
 import PropertyCard from './PropertyCard';
+import BookingModal from './BookingModal';
 import Filters from './Filters';
 import { Typography } from './ui';
 import useAuthFetch from '../hooks/useAuthFetch';
@@ -16,6 +17,7 @@ const PropertyList = ({ onBook }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState({}); // track per property
   const [loading, setLoading] = useState(true); // Start with loading true
   const [properties, setProperties] = useState([]); // Now state-based
+  const [bookingModal, setBookingModal] = useState({ isOpen: false, property: null });
   const { get } = useAuthFetch();
 
   // Fetch properties from API on component mount and when filters change
@@ -194,8 +196,11 @@ const PropertyList = ({ onBook }) => {
   ];
 
   const handleExpressInterest = (property) => {
-    toast.success(`📨 Interest sent for ${property.name} in ${property.location}`);
-    if (onBook) onBook(property);
+    setBookingModal({ isOpen: true, property });
+  };
+
+  const handleCloseBookingModal = () => {
+    setBookingModal({ isOpen: false, property: null });
   };
 
   // Function to refresh properties from API
@@ -203,9 +208,9 @@ const PropertyList = ({ onBook }) => {
     await fetchProperties();
   };
 
-  // Enhanced filtering logic
+  // Enhanced filtering and sorting logic
   const filtered = useMemo(() => {
-    return properties.filter((property) => {
+    const filteredProperties = properties.filter((property) => {
       // Search query filter
       const searchMatch = !searchQuery || 
         property.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -236,6 +241,16 @@ const PropertyList = ({ onBook }) => {
         property.property_type === filters.propertyType;
 
       return searchMatch && locationMatch && priceMatch && typeMatch;
+    });
+
+    // Sort by creation date (newest first) - newly posted properties appear at the top
+    return filteredProperties.sort((a, b) => {
+      // Handle both API properties (with created_at) and sample properties (with id as fallback)
+      const dateA = a.created_at ? new Date(a.created_at) : new Date(0); // Use epoch for sample properties
+      const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+      
+      // Sort in descending order (newest first)
+      return dateB - dateA;
     });
   }, [properties, searchQuery, filters]);
 
@@ -351,8 +366,8 @@ const PropertyList = ({ onBook }) => {
             </div>
           </div>
         ) : (
-          // Property cards grid
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            // Property cards grid
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((property) => (
               <PropertyCard
                 key={property.id}
@@ -365,6 +380,13 @@ const PropertyList = ({ onBook }) => {
           </div>
         )}
       </div>
+
+      {/* Booking Modal */}
+      <BookingModal
+        isOpen={bookingModal.isOpen}
+        onClose={handleCloseBookingModal}
+        property={bookingModal.property}
+      />
     </div>
   );
 };

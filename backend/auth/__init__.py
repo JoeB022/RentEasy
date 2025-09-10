@@ -6,7 +6,8 @@ from .utils import (
     verify_access_token, 
     verify_refresh_token,
     refresh_access_token,
-    get_user_info_from_token
+    get_user_info_from_token,
+    role_required
 )
 
 __all__ = [
@@ -16,5 +17,6 @@ __all__ = [
     'verify_access_token',
     'verify_refresh_token',
     'refresh_access_token',
-    'get_user_info_from_token'
+    'get_user_info_from_token',
+    'role_required'
 ]

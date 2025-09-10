@@ -22,7 +22,13 @@ const useAuthFetch = () => {
         token = await refreshToken();
       } catch (error) {
         // Refresh failed, clear tokens and redirect to login
+        console.error('Initial token refresh failed:', error);
         clearToken();
+        // Clear all localStorage items to ensure clean state
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user_role');
+        localStorage.removeItem('username');
         navigate('/login');
         throw new Error('Authentication failed. Please login again.');
       }
@@ -34,7 +40,13 @@ const useAuthFetch = () => {
         token = await refreshToken();
       } catch (error) {
         // Refresh failed, clear tokens and redirect to login
+        console.error('Proactive token refresh failed:', error);
         clearToken();
+        // Clear all localStorage items to ensure clean state
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user_role');
+        localStorage.removeItem('username');
         navigate('/login');
         throw new Error('Authentication failed. Please login again.');
       }
@@ -59,9 +71,9 @@ const useAuthFetch = () => {
       headers,
     });
 
-    // Handle 401 Unauthorized responses
-    if (response.status === 401) {
-      // Token might be invalid, try to refresh once
+    // Handle 401 Unauthorized or 403 Forbidden responses (token issues)
+    if (response.status === 401 || response.status === 403) {
+      // Token might be invalid or expired, try to refresh once
       try {
         const newToken = await refreshToken();
         headers.Authorization = `Bearer ${newToken}`;
@@ -75,7 +87,13 @@ const useAuthFetch = () => {
         return retryResponse;
       } catch (error) {
         // Refresh failed, clear tokens and redirect to login
+        console.error('Token refresh failed:', error);
         clearToken();
+        // Clear all localStorage items to ensure clean state
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user_role');
+        localStorage.removeItem('username');
         navigate('/login');
         throw new Error('Authentication failed. Please login again.');
       }

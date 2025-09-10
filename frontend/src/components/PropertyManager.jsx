@@ -44,7 +44,7 @@ const PropertyManager = () => {
   const [touchEndX, setTouchEndX] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const { post, put, del, get } = useAuthFetch();
+  const { post, put, delete: del, get } = useAuthFetch();
 
   // Fetch landlord's properties on component mount
   useEffect(() => {
@@ -100,15 +100,20 @@ const PropertyManager = () => {
       return toast.error('Please fill all required fields.');
     }
 
+    // Location coordinates are optional - property can be posted without precise coordinates
+    if (!formData.latitude || !formData.longitude) {
+      console.log('Property will be posted without precise coordinates');
+    }
+
     console.log('Submitting property data:', formData);
-    console.log('Using API endpoint:', '/api/properties');
+    console.log('Using API endpoint:', editingId ? `/api/landlord/properties/${editingId}` : '/api/landlord/properties');
 
     try {
       setLoading(true);
 
     if (editingId) {
         // Update existing property
-        const response = await put(`/api/properties/${editingId}`, formData);
+        const response = await put(`/api/landlord/properties/${editingId}`, formData);
         if (response.ok) {
           const updatedProperty = await response.json();
       setListings((prev) =>
@@ -123,8 +128,8 @@ const PropertyManager = () => {
         }
     } else {
         // Create new property
-        console.log('Making POST request to /api/properties');
-        const response = await post('/api/properties', formData);
+        console.log('Making POST request to /api/landlord/properties');
+        const response = await post('/api/landlord/properties', formData);
         console.log('Response status:', response.status);
         console.log('Response ok:', response.ok);
         
@@ -133,8 +138,8 @@ const PropertyManager = () => {
           console.log('Property created successfully:', newProperty);
           setListings(prev => [newProperty.property, ...prev]);
       const locationInfo = formData.latitude && formData.longitude 
-        ? ` with coordinates (${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)})`
-        : '';
+        ? ` with precise coordinates (${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)})`
+        : ' (location set by address only)';
           toast.success(`Property added successfully${locationInfo}`);
         } else {
           const error = await response.json();
@@ -179,7 +184,7 @@ const PropertyManager = () => {
   const handleDelete = async (propertyId) => {
     try {
       setLoading(true);
-      const response = await del(`/api/properties/${propertyId}`);
+      const response = await del(`/api/landlord/properties/${propertyId}`);
       
       if (response.ok) {
         setListings((prev) => prev.filter((item) => item.id !== propertyId));
@@ -356,7 +361,7 @@ const PropertyManager = () => {
                   required
                 />
                 <p className="mt-1 text-xs text-[#007C99]">
-                  💡 Tip: Use the map below to set precise coordinates for better property discovery
+                  💡 Tip: Search for the property location below or use your current location for precise coordinates
                 </p>
           </div>
 
@@ -436,6 +441,40 @@ const PropertyManager = () => {
                   placeholder="Describe the property..."
                   rows="3"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#003B4C] mb-2">
+                  Amenities
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    'Wi-Fi', 'Parking', 'Balcony', 'Garden', 'Garage', 
+                    'Swimming Pool', 'Gym', 'Security', 'Fully Furnished', 'Water Included'
+                  ].map((amenity) => (
+                    <label key={amenity} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.amenities.includes(amenity)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData(prev => ({
+                              ...prev,
+                              amenities: [...prev.amenities, amenity]
+                            }));
+                          } else {
+                            setFormData(prev => ({
+                              ...prev,
+                              amenities: prev.amenities.filter(a => a !== amenity)
+                            }));
+                          }
+                        }}
+                        className="rounded border-gray-300 text-[#007C99] focus:ring-[#007C99]"
+                      />
+                      <span className="text-sm text-gray-700">{amenity}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div>

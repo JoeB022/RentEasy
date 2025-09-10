@@ -4,7 +4,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import toast from 'react-hot-toast';
 import { FcGoogle } from 'react-icons/fc';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { TextInput, SubmitButton } from './forms';
 import { setToken, clearToken, isAuthenticated, getToken } from '../utils/auth';
 import { Button, Typography } from './ui';
@@ -21,7 +21,8 @@ import {
   CheckCircle,
   AlertCircle,
   Home,
-  Building2
+  Building2,
+  Phone
 } from 'lucide-react';
 
 // Validation schemas
@@ -45,6 +46,10 @@ const signupSchema = yup.object({
     .string()
     .required('Email is required')
     .email('Please enter a valid email address'),
+  phone: yup
+    .string()
+    .required('Phone number is required')
+    .matches(/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number'),
   password: yup
     .string()
     .required('Password is required')
@@ -122,23 +127,28 @@ const login = async (email, password) => {
 };
 
 // 🆕 Registration API call
-const register = async (username, email, password, role) => {
+const register = async (username, email, phone, password, role) => {
   try {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    console.log('Registering user with:', { username, email, phone, role });
     const res = await fetch(`${apiUrl}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password, role }),
+      body: JSON.stringify({ username, email, phone, password, role }),
     });
 
+    console.log('Registration response status:', res.status);
     if (!res.ok) {
       const errorData = await res.json();
+      console.log('Registration error:', errorData);
       throw new Error(errorData.error || 'Registration failed');
     }
 
     const data = await res.json();
+    console.log('Registration success data:', data);
     return data;
   } catch (error) {
+    console.log('Registration error caught:', error);
     toast.error('❌ Registration failed: ' + error.message);
     throw error;
   }
@@ -208,6 +218,7 @@ export const ProtectedRoute = ({ children }) => {
 
 // 🧠 Auth Component
 const Auth = ({ mode = 'login', onClose }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(mode);
   const [role, setRole] = useState('tenant');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -260,6 +271,9 @@ const Auth = ({ mode = 'login', onClose }) => {
   };
 
   const onSubmit = async (data) => {
+    console.log('Form submitted with data:', data);
+    console.log('Active tab:', activeTab);
+    console.log('Role:', role);
     setIsSubmitting(true);
     
     try {
@@ -287,16 +301,30 @@ const Auth = ({ mode = 'login', onClose }) => {
         }
       } else {
         // Handle registration
-        const res = await register(data.username, data.email, data.password, role);
-        toast.success('🎉 Account created successfully!');
-        if (onClose) onClose();
+        console.log('Starting registration process...');
+        const res = await register(data.username, data.email, data.phone, data.password, role);
+        console.log('Registration response:', res);
+        
+        // Check if user needs approval
+        if (res.requires_approval) {
+          toast.success('🎉 Account created successfully! Your account is pending admin approval. Redirecting to login...');
+        } else {
+          toast.success('🎉 Account created successfully! Redirecting to login...');
+        }
         
         // Clear backend error and redirect to login page
         setBackendError('');
-        setActiveTab('login');
-        signupForm.reset();
+        
+        // Redirect to login page after successful registration
+        console.log('Setting up redirect to login page...');
+        setTimeout(() => {
+          console.log('Redirecting to login page now...');
+          // Always use window.location.href for reliable redirect
+          window.location.href = '/login';
+        }, 2000); // Increased delay to ensure user sees the message
       }
     } catch (err) {
+      console.log('Error in form submission:', err);
       // Error handled by toast
       setBackendError(err.message);
     } finally {
@@ -499,6 +527,34 @@ const Auth = ({ mode = 'login', onClose }) => {
               </div>
             )}
           </div>
+
+          {activeTab === 'signup' && (
+            <div className="relative group">
+              <label className="block text-sm font-semibold text-[#003B4C] mb-1 flex items-center gap-2">
+                <Phone className="w-4 h-4 text-[#007C99]" />
+                Phone Number
+              </label>
+              <div className="relative">
+                <input
+                  type="tel"
+                  placeholder="Enter your phone number (e.g., +254712345678)"
+                  className={`w-full px-3 py-2 pl-10 border-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#007C99]/20 bg-white/80 backdrop-blur-sm ${
+                    currentForm.formState.errors.phone
+                      ? 'border-red-300 bg-red-50'
+                      : 'border-[#007C99]/30 hover:border-[#007C99]/50 focus:border-[#007C99]'
+                  }`}
+                  {...currentForm.register('phone')}
+                />
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#007C99]/60" />
+              </div>
+              {currentForm.formState.errors.phone && (
+                <div className="flex items-center gap-2 mt-1 text-red-600 text-xs">
+                  <AlertCircle className="w-3 h-3" />
+                  {currentForm.formState.errors.phone.message}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="relative group">
             <label className="block text-sm font-semibold text-[#003B4C] mb-1 flex items-center gap-2">

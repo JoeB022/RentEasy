@@ -207,3 +207,57 @@ def get_user_info_from_token(token: str) -> Optional[Dict[str, Any]]:
         return None
     except Exception:
         return None
+
+def role_required(allowed_roles):
+    """
+    Decorator to check if user has required role(s).
+    
+    Args:
+        allowed_roles: Single role string or list of allowed roles
+    """
+    from functools import wraps
+    from flask import jsonify, request
+    from flask_jwt_extended import get_jwt_identity
+    import json
+    
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            try:
+                # Get current user from JWT token
+                current_user = get_jwt_identity()
+                
+                if not current_user:
+                    return jsonify({'error': 'No valid token found'}), 401
+                
+                # Parse user info from token
+                user_info = json.loads(current_user)
+                user_role = user_info.get('role')
+                
+                if not user_role:
+                    return jsonify({'error': 'No role information in token'}), 401
+                
+                # Check if user's role is allowed
+                if isinstance(allowed_roles, str):
+                    allowed_roles_list = [allowed_roles]
+                else:
+                    allowed_roles_list = allowed_roles
+                
+                if user_role not in allowed_roles_list:
+                    return jsonify({
+                        'error': 'Insufficient permissions',
+                        'required_roles': allowed_roles_list,
+                        'user_role': user_role
+                    }), 403
+                
+                # Add user info to request context for use in route
+                request.user_info = user_info
+                
+                return f(*args, **kwargs)
+            except json.JSONDecodeError:
+                return jsonify({'error': 'Invalid token format'}), 401
+            except Exception as e:
+                return jsonify({'error': 'Authentication failed', 'details': str(e)}), 401
+        decorated_function.__name__ = f.__name__
+        return decorated_function
+    return decorator

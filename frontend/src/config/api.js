@@ -10,9 +10,15 @@ export const API_ENDPOINTS = {
   REFRESH: '/auth/refresh',
   ME: '/auth/me',
   
+  // Admin endpoints
+  PENDING_USERS: '/auth/admin/pending-users',
+  APPROVE_USER: (id) => `/auth/admin/approve-user/${id}`,
+  REJECT_USER: (id) => `/auth/admin/reject-user/${id}`,
+  
   // Properties
   PROPERTIES: '/api/properties',
   PROPERTY: (id) => `/api/properties/${id}`,
+  PROPERTY_LANDLORD: (id) => `/api/properties/${id}/landlord`,
   LANDLORD_PROPERTIES: '/api/landlord/properties',
   
   // Dashboard

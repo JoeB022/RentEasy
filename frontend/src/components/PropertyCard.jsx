@@ -1,101 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Transition } from '@headlessui/react';
-import ResponsiveImage from './ResponsiveImage';
+import { ChevronLeft, ChevronRight, MapPin, BedDouble, Bath, Heart, Share2, ExternalLink } from 'lucide-react';
 import { Button, Typography } from './ui';
 
 const PropertyCard = ({ property, onBook, currentImageIndex = 0, onImageChange }) => {
   const [isHovered, setIsHovered] = useState(false);
   const totalImages = property.images?.length || 1;
-
-  // Helper function to get amenity icon
-  const getAmenityIcon = (amenity) => {
-    const amenityLower = amenity.toLowerCase();
-    const iconMap = {
-      'wifi': '📶',
-      'parking': '🚗',
-      'balcony': '🏠',
-      'garden': '🌱',
-      'garage': '🏚️',
-      'pool': '🏊',
-      'gym': '💪',
-      'security': '🔒',
-      'furnished': '🪑',
-      'water': '💧',
-      'electricity': '⚡',
-      'air conditioning': '❄️',
-      'heating': '🔥',
-      'elevator': '🛗',
-      'doorman': '👨‍💼',
-      'laundry': '👕',
-      'storage': '📦',
-      'pet friendly': '🐕',
-      'smoking allowed': '🚬',
-      'no smoking': '🚭'
-    };
-    
-    // Try exact match first
-    if (iconMap[amenityLower]) {
-      return iconMap[amenityLower];
-    }
-    
-    // Try partial matches
-    for (const [key, icon] of Object.entries(iconMap)) {
-      if (amenityLower.includes(key) || key.includes(amenityLower)) {
-        return icon;
-      }
-    }
-    
-    // Default icon
-    return '✨';
-  };
-
-  // Helper function to format amenity name
-  const formatAmenityName = (amenity) => {
-    // Convert snake_case or kebab-case to Title Case
-    return amenity
-      .replace(/[-_]/g, ' ')
-      .replace(/\b\w/g, l => l.toUpperCase())
-      .trim();
-  };
-
-  // Helper function to safely parse amenities from JSON string
-  const getAmenities = () => {
-    console.log('PropertyCard - Property data:', property);
-    console.log('PropertyCard - Amenities:', property.amenities);
-    console.log('PropertyCard - Amenities type:', typeof property.amenities);
-    
-    if (!property.amenities) return [];
-    
-    try {
-      // If it's already an array, return it
-      if (Array.isArray(property.amenities)) {
-        return property.amenities;
-      }
-      
-      // If it's a JSON string, parse it
-      if (typeof property.amenities === 'string') {
-        const parsed = JSON.parse(property.amenities);
-        return Array.isArray(parsed) ? parsed : [];
-      }
-      
-      return [];
-    } catch (error) {
-      console.warn('Failed to parse amenities:', error);
-      return [];
-    }
-  };
-
-  // Check if amenities are still loading (being parsed)
-  const [amenitiesLoading, setAmenitiesLoading] = useState(false);
-  
-  useEffect(() => {
-    if (property.amenities) {
-      setAmenitiesLoading(true);
-      // Simulate a brief loading state for better UX
-      const timer = setTimeout(() => setAmenitiesLoading(false), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [property.amenities]);
 
   const handlePrev = () => {
     if (onImageChange) {
@@ -108,6 +18,19 @@ const PropertyCard = ({ property, onBook, currentImageIndex = 0, onImageChange }
     if (onImageChange) {
       const newIndex = currentImageIndex === totalImages - 1 ? 0 : currentImageIndex + 1;
       onImageChange(property.id, newIndex);
+    }
+  };
+
+  const handleLocationClick = () => {
+    if (property.latitude && property.longitude) {
+      // Use precise coordinates if available
+      const url = `https://www.google.com/maps?q=${property.latitude},${property.longitude}`;
+      window.open(url, '_blank');
+    } else if (property.location) {
+      // Use location name as fallback
+      const encodedLocation = encodeURIComponent(property.location);
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
+      window.open(url, '_blank');
     }
   };
 
@@ -127,9 +50,9 @@ const PropertyCard = ({ property, onBook, currentImageIndex = 0, onImageChange }
   const statusBadge = getStatusBadge();
 
   const badgeClasses = {
-    success: 'bg-success-100 text-success-700 border-success-300',
-    error: 'bg-error-100 text-error-700 border-error-300',
-    accent: 'bg-accent-100 text-accent-700 border-accent-300',
+    success: 'bg-success-100 text-success-700 border-success-200',
+    error: 'bg-error-100 text-error-700 border-error-200',
+    accent: 'bg-accent-100 text-accent-700 border-accent-200',
   };
 
   return (
@@ -142,10 +65,10 @@ const PropertyCard = ({ property, onBook, currentImageIndex = 0, onImageChange }
     >
       <div
         className={`
-          group relative bg-white rounded-xl border border-gray-200 overflow-hidden
+          group relative bg-white rounded-xl border border-secondary-200 overflow-hidden
           transition-all duration-300 ease-out cursor-pointer
-          hover:shadow-xl hover:-translate-y-1 hover:border-primary-200
-          ${isHovered ? 'shadow-xl -translate-y-1 border-primary-200' : 'shadow-md'}
+          hover:shadow-large hover:-translate-y-1 hover:border-primary-200
+          ${isHovered ? 'shadow-large -translate-y-1 border-primary-200' : 'shadow-soft'}
         `}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -162,23 +85,12 @@ const PropertyCard = ({ property, onBook, currentImageIndex = 0, onImageChange }
           </span>
         </div>
 
-        {/* GPS Indicator Badge */}
-        {property.latitude && property.longitude && (
-          <div className="absolute top-3 left-20 z-10">
-            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full border bg-blue-100 text-blue-700 border-blue-300">
-              📍 GPS
-            </span>
-          </div>
-        )}
-
         {/* Image Container */}
         <div className="relative aspect-[4/3] overflow-hidden">
-          <ResponsiveImage
-            src={property.images?.[currentImageIndex] || property.images?.[0]}
+          <img
+            src={property.images?.[currentImageIndex] || property.images?.[0] || '/placeholder-property.jpg'}
             alt={`${property.name} - ${currentImageIndex + 1}`}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            fallbackSrc="/placeholder-property.jpg"
-            priority={currentImageIndex === 0}
           />
           
           {/* Image Navigation */}
@@ -208,7 +120,7 @@ const PropertyCard = ({ property, onBook, currentImageIndex = 0, onImageChange }
               </Button>
               
               {/* Image Counter */}
-              <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+              <div className="absolute bottom-2 right-2 bg-secondary-900/80 text-white text-xs px-2 py-1 rounded-full font-medium">
                 {currentImageIndex + 1}/{totalImages}
               </div>
             </>
@@ -218,20 +130,29 @@ const PropertyCard = ({ property, onBook, currentImageIndex = 0, onImageChange }
         {/* Content */}
         <div className="p-4">
           {/* Title and Location */}
-          <Typography.Heading level={5} className="mb-2 text-secondary-900 group-hover:text-primary-600 transition-colors duration-200">
+          <Typography.Heading level={5} className="mb-2 group-hover:text-primary-600 transition-colors duration-200">
             {property.name}
           </Typography.Heading>
           
-          <Typography.BodyText variant="muted" className="mb-3 flex items-center gap-1">
-            📍 {property.location}
-          </Typography.BodyText>
-
-          {/* Property Description */}
-          {property.description && (
-            <Typography.BodyText variant="muted" className="mb-3 text-sm text-gray-600 line-clamp-2">
-              {property.description}
-            </Typography.BodyText>
-          )}
+          <div 
+            className="mb-3 flex items-center justify-between cursor-pointer hover:text-primary-600 transition-all duration-200 group/location p-2 rounded-lg hover:bg-primary-50 border border-primary-200 hover:border-primary-300 hover:shadow-sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleLocationClick();
+            }}
+            title="Click to view on map"
+          >
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary-500 group-hover/location:text-primary-600 transition-colors duration-200" />
+              <Typography.BodyText variant="muted" className="group-hover/location:text-primary-600 transition-colors duration-200">
+                {property.location}
+              </Typography.BodyText>
+            </div>
+            <div className="flex items-center gap-1 opacity-0 group-hover/location:opacity-100 transition-opacity duration-200">
+              <Typography.Caption className="text-primary-500 font-medium">View Map</Typography.Caption>
+              <ExternalLink className="w-3 h-3 text-primary-500" />
+            </div>
+          </div>
 
           {/* Price */}
           <div className="mb-3">
@@ -240,73 +161,57 @@ const PropertyCard = ({ property, onBook, currentImageIndex = 0, onImageChange }
             </Typography.Heading>
           </div>
 
+          {/* Property Details */}
+          <div className="flex items-center space-x-6 mb-4">
+            <div className="flex items-center gap-1">
+              <BedDouble className="w-4 h-4 text-primary-500" />
+              <Typography.BodyText size="sm" variant="muted" className="font-medium">
+                {property.bedrooms || 'N/A'}
+              </Typography.BodyText>
+              <Typography.Caption className="text-gray-500">
+                bedroom{property.bedrooms !== 1 ? 's' : ''}
+              </Typography.Caption>
+            </div>
+            <div className="flex items-center gap-1">
+              <Bath className="w-4 h-4 text-primary-500" />
+              <Typography.BodyText size="sm" variant="muted" className="font-medium">
+                {property.bathrooms || 'N/A'}
+              </Typography.BodyText>
+              <Typography.Caption className="text-gray-500">
+                bathroom{property.bathrooms !== 1 ? 's' : ''}
+              </Typography.Caption>
+            </div>
+          </div>
+
           {/* Amenities */}
-          {(() => {
-            const amenities = getAmenities();
-            if (amenities.length === 0) return null;
-            
-            return (
-              <div className="mb-4">
-                <div className="flex items-center gap-2 mb-2 group/header">
-                  <div className="w-4 h-4 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full flex items-center justify-center group-hover/header:scale-110 transition-transform duration-200">
-                    <span className="text-white text-xs">✨</span>
-                  </div>
-                  <Typography.BodyText variant="muted" className="text-xs font-medium text-gray-600 group-hover/header:text-primary-600 transition-colors duration-200">
-                    Amenities
-                  </Typography.BodyText>
-                </div>
-                {amenitiesLoading ? (
-                  // Loading skeleton
-                  <div className="flex flex-wrap gap-2">
-                    {[...Array(3)].map((_, index) => (
-                      <div
-                        key={index}
-                        className="w-20 h-7 bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg animate-pulse"
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {amenities.slice(0, 4).map((amenity, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-primary-50 to-primary-100 text-primary-700 border border-primary-200 rounded-lg shadow-sm hover:shadow-md hover:shadow-primary-200/50 transition-all duration-200 hover:scale-105 animate-in slide-in-from-bottom-2 fade-in duration-300"
-                        style={{
-                          animationDelay: `${index * 100}ms`,
-                          animationFillMode: 'both'
-                        }}
-                      >
-                        {getAmenityIcon(amenity)}
-                        {formatAmenityName(amenity)}
-                      </span>
-                    ))}
-                    {amenities.length > 4 && (
-                      <div className="relative group">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 cursor-pointer">
-                          <span>➕</span>
-                          +{amenities.length - 4} more
-                        </span>
-                        
-                        {/* Tooltip */}
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-20">
-                          <div className="flex flex-wrap gap-1 max-w-xs">
-                            {amenities.slice(4).map((amenity, index) => (
-                              <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-800 rounded text-xs">
-                                {getAmenityIcon(amenity)}
-                                {formatAmenityName(amenity)}
-                              </span>
-                            ))}
-                          </div>
-                          {/* Arrow */}
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+          {property.amenities && property.amenities.length > 0 && (
+            <div className="mb-4">
+              <div className="flex flex-wrap gap-1">
+                {property.amenities.slice(0, 3).map((amenity, index) => (
+                  <span
+                    key={index}
+                    className="inline-block px-2 py-1 text-xs bg-secondary-100 text-secondary-600 rounded-md font-medium"
+                  >
+                    {amenity}
+                  </span>
+                ))}
+                {property.amenities.length > 3 && (
+                  <span className="inline-block px-2 py-1 text-xs bg-secondary-100 text-secondary-500 rounded-md font-medium">
+                    +{property.amenities.length - 3} more
+                  </span>
                 )}
               </div>
-            );
-          })()}
+            </div>
+          )}
+
+          {/* Description */}
+          {property.description && (
+            <div className="mb-4">
+              <Typography.BodyText size="sm" variant="muted" className="line-clamp-2">
+                {property.description}
+              </Typography.BodyText>
+            </div>
+          )}
 
           {/* Action Button */}
           <Button
