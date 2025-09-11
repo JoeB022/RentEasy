@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: renteasy-frontend
+    env: static
+    plan: starter
+    buildCommand: |
+      npm install
+      npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://renteasy-backend.onrender.com

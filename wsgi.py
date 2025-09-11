@@ -13,9 +13,9 @@ sys.path.insert(0, backend_dir)
 from app import create_app
 
 # Create the application instance for production
-app = create_app(config_name="production")
+application = create_app(config_name="production")
 
 if __name__ == "__main__":
     # This should not be used in production
     # Use a WSGI server like Gunicorn instead
-    app.run(debug=False, host="0.0.0.0", port=8000)
+    application.run(debug=False, host="0.0.0.0", port=8000)
