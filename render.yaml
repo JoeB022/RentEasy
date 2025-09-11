@@ -50,8 +50,6 @@ services:
   - type: pserv
     name: renteasy-db
     plan: starter
-    runtime: docker
-    dockerfilePath: ./Dockerfile.postgres
 
   # Redis Cache
   - type: redis
