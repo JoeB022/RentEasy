@@ -50,8 +50,6 @@ services:
   - type: pserv
     name: renteasy-db
     plan: starter
-    databaseName: renteasy
-    user: renteasy_user
 
   # Redis Cache
   - type: redis
