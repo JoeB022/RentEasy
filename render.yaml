@@ -5,7 +5,8 @@ services:
     env: python
     plan: starter
     buildCommand: |
-      pip install -r backend/requirements-prod.txt
+      pip install -r backend/requirements.txt
+      python -c "import psutil; print('psutil version:', psutil.__version__)"
       cd backend && python manage.py setup-db --upgrade
     startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 30 --access-logfile - --error-logfile - wsgi:application
     envVars:
