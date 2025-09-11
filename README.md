@@ -9,24 +9,35 @@ A full-stack real estate management platform with role-based access for tenants,
 - **Role-based access control** (Tenant, Landlord, Admin)
 - **Protected routes** and secure API endpoints
 - **Session management** with localStorage persistence
+- **Admin approval system** for new user registrations
+- **Phone number collection** during landlord signup
+- **Account deletion** with cascade property removal
 
 ### 🏠 Property Management
 - **Property listing** with detailed descriptions and amenities
 - **Property search and filtering** capabilities
 - **Image upload and management**
 - **Property status tracking** (Available, Rented, Under Maintenance)
+- **Location-based property search** with map integration
+- **Amenities management** with multi-select options
+- **Property deletion** with real-time updates
+- **Newest properties** appear at the top of listings
 
 ### 📅 Booking System
 - **Tenant booking requests** with approval workflow
 - **Booking status management** (Pending, Approved, Rejected, Cancelled)
 - **Booking history** and status tracking
 - **Real-time booking updates**
+- **Landlord contact integration** with WhatsApp, SMS, call, and email
+- **Booking modal** with landlord details and communication options
 
 ### 👥 User Management
 - **Multi-role user system** (Tenant, Landlord, Admin)
 - **User profile management**
 - **Admin user creation** via CLI script
 - **Role-based dashboards**
+- **Pending user approvals** for new registrations
+- **User account deletion** with data cleanup
 
 ### 🎨 Modern UI/UX
 - **Responsive design** with Tailwind CSS
@@ -34,6 +45,10 @@ A full-stack real estate management platform with role-based access for tenants,
 - **Interactive components** with smooth animations
 - **Form validation** with React Hook Form + Yup
 - **Toast notifications** for user feedback
+- **Enhanced property cards** with modern styling
+- **Location navigation** with map integration
+- **Visual amenity indicators** with icons and styling
+- **Improved property forms** with comprehensive validation
 
 ## 🛠️ Tech Stack
 
@@ -55,6 +70,8 @@ A full-stack real estate management platform with role-based access for tenants,
 - **Flask-Migrate** - Database migrations
 - **Werkzeug** - Password hashing and utilities
 - **SQLite** - Lightweight database
+- **Redis** - Session storage and caching
+- **PostgreSQL** - Production database option
 
 ## 📦 Installation & Setup
 
@@ -84,11 +101,16 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Set up environment variables
-export FLASK_APP=app_simple.py
+export FLASK_APP=app.py
 export FLASK_ENV=development
 
+# Initialize database
+python manage.py db init
+python manage.py db migrate
+python manage.py db upgrade
+
 # Run the application
-python app_simple.py
+python app.py
 ```
 
 The backend will run on `http://localhost:8000`
@@ -113,7 +135,7 @@ The frontend will run on `http://localhost:5173`
 ### 4. Create Admin Account (Optional)
 ```bash
 # From the backend directory
-python create_admin.py --email admin@example.com --password admin123
+python manage.py create-admin --email admin@example.com --password admin123
 ```
 
 ## 🔧 Environment Configuration
@@ -121,12 +143,19 @@ python create_admin.py --email admin@example.com --password admin123
 ### Backend Environment Variables
 ```bash
 # Flask Configuration
-FLASK_APP=app_simple.py
+FLASK_APP=app.py
 FLASK_ENV=development
 FLASK_DEBUG=True
 
 # Database Configuration
-SQLALCHEMY_DATABASE_URI=sqlite:///test.db
+SQLALCHEMY_DATABASE_URI=sqlite:///instance/app.db
+
+# JWT Configuration
+JWT_SECRET_KEY=your-secret-key-here
+JWT_ACCESS_TOKEN_EXPIRES=3600
+
+# Redis Configuration (Optional)
+REDIS_URL=redis://localhost:6379/0
 ```
 
 ### Frontend Environment Variables
@@ -141,15 +170,18 @@ VITE_API_URL=http://localhost:8000
 ### Backend Development
 ```bash
 # Start development server
-python app_simple.py
+python app.py
 
 # Database operations
-flask db init
-flask db migrate
-flask db upgrade
+python manage.py db init
+python manage.py db migrate
+python manage.py db upgrade
 
 # Create admin user
-python create_admin.py --email admin@example.com --password admin123
+python manage.py create-admin --email admin@example.com --password admin123
+
+# Run tests
+python -m pytest
 ```
 
 ### Frontend Development
@@ -172,15 +204,24 @@ npm run lint
 ```
 RentEasy/
 ├── backend/
-│   ├── app_simple.py          # Main Flask application (feature-rich)
-│   ├── app.py                 # Production Flask skeleton
+│   ├── app.py                 # Main Flask application
+│   ├── manage.py              # Flask CLI management script
 │   ├── config.py              # Configuration settings
 │   ├── requirements.txt        # Python dependencies
-│   ├── create_admin.py        # Admin user creation script
 │   ├── models/
-│   │   └── user.py            # User model and roles
+│   │   ├── user.py            # User model and roles
+│   │   ├── property.py        # Property model
+│   │   ├── lease.py           # Lease model
+│   │   └── payment.py         # Payment model
+│   ├── routes/
+│   │   ├── auth.py            # Authentication routes
+│   │   ├── properties.py      # Property management routes
+│   │   └── health.py          # Health check routes
+│   ├── auth/
+│   │   └── utils.py           # Authentication utilities
+│   ├── migrations/            # Database migrations
 │   ├── instance/
-│   │   └── test.db            # SQLite database
+│   │   └── app.db             # SQLite database
 │   └── venv/                  # Python virtual environment
 ├── frontend/
 │   ├── src/
@@ -188,8 +229,10 @@ RentEasy/
 │   │   │   ├── Auth.jsx       # Authentication modal
 │   │   │   ├── PropertyCard.jsx
 │   │   │   ├── PropertyList.jsx
-│   │   │   ├── BookingStatus.jsx
-│   │   │   ├── Services.jsx
+│   │   │   ├── PropertyManager.jsx
+│   │   │   ├── PropertyMap.jsx
+│   │   │   ├── BookingModal.jsx
+│   │   │   ├── PendingUserApprovals.jsx
 │   │   │   └── ...
 │   │   ├── pages/             # Page components
 │   │   │   ├── TenantDashboard.jsx
@@ -279,17 +322,26 @@ RentEasy/
 - `username`: Unique username
 - `email`: Unique email address
 - `password_hash`: Hashed password
+- `phone`: Phone number (for landlords)
 - `role`: User role (tenant, landlord, admin)
+- `approval_status`: User approval status (pending, approved, rejected)
 
 ### Properties Table
 - `id`: Primary key
-- `title`: Property title
+- `name`: Property name
 - `description`: Property description
 - `price`: Monthly rent
 - `location`: Property location
+- `property_type`: Type of property (apartment, house, etc.)
+- `bedrooms`: Number of bedrooms
+- `bathrooms`: Number of bathrooms
+- `square_feet`: Property size
 - `amenities`: JSON array of amenities
+- `images`: JSON array of image URLs
+- `latitude`: GPS latitude
+- `longitude`: GPS longitude
+- `available`: Availability status
 - `landlord_id`: Foreign key to users table
-- `status`: Property status
 
 ### Bookings Table
 - `id`: Primary key
@@ -304,7 +356,10 @@ RentEasy/
 ```bash
 # Production build
 pip install -r requirements.txt
-python app_simple.py
+python app.py
+
+# Or using Gunicorn for production
+gunicorn -c gunicorn.conf.py wsgi:application
 ```
 
 ### Frontend Deployment
@@ -341,17 +396,20 @@ npm run test:watch
 - `POST /auth/register` - User registration
 - `POST /auth/login` - User login
 - `POST /auth/refresh` - Token refresh
+- `POST /auth/delete-account` - Delete user account
+- `POST /auth/admin/approve-user/<id>` - Approve pending user (Admin only)
+- `POST /auth/admin/reject-user/<id>` - Reject pending user (Admin only)
 
 ### Properties
-- `GET /api/properties` - Get all properties
-- `POST /api/properties` - Create new property (Landlord only)
-- `PUT /api/properties/<id>` - Update property (Landlord only)
-- `DELETE /api/properties/<id>` - Delete property (Landlord only)
+- `GET /api/properties` - Get all available properties
+- `GET /api/properties/<id>/landlord` - Get landlord details for property
+- `GET /api/landlord/properties` - Get landlord's properties (Landlord only)
+- `POST /api/landlord/properties` - Create new property (Landlord only)
+- `PUT /api/landlord/properties/<id>` - Update property (Landlord only)
+- `DELETE /api/landlord/properties/<id>` - Delete property (Landlord only)
 
-### Bookings
-- `GET /api/bookings` - Get user's bookings
-- `POST /api/bookings` - Create booking (Tenant only)
-- `PUT /api/bookings/<id>` - Update booking status
+### Admin
+- `GET /auth/admin/users/pending` - Get pending users (Admin only)
 
 ## 🔄 Updates & Maintenance
 
@@ -394,23 +452,47 @@ For support and questions:
 4. Add tests if applicable
 5. Submit a pull request
 
+## 🆕 Recent Updates
+
+### Latest Features (v2.0)
+- **Admin Approval System**: New users require admin approval before login
+- **Phone Number Integration**: Landlords provide phone numbers during signup
+- **Enhanced Booking Modal**: Direct communication with landlords via WhatsApp, SMS, call, and email
+- **Property Management**: Complete CRUD operations with real-time updates
+- **Location Services**: Map integration for property location selection and navigation
+- **Cascade Deletion**: User account deletion removes all associated properties
+- **Modern UI**: Enhanced property cards with improved styling and user experience
+- **Database Migrations**: Proper schema management with Alembic migrations
+
+### Key Improvements
+- **Security**: Enhanced JWT token handling with automatic refresh
+- **Performance**: Optimized database queries and frontend rendering
+- **User Experience**: Intuitive property forms with comprehensive validation
+- **Mobile Support**: Responsive design for all device sizes
+- **Error Handling**: Comprehensive error boundaries and user feedback
+
 ## 📊 Current Status
 
 ✅ **Fully Functional Application**
-- Complete authentication system
-- Property management for landlords
-- Booking system for tenants
-- Admin user management
-- Responsive UI with modern design
-- Database persistence
+- Complete authentication system with JWT
+- Property management for landlords with CRUD operations
+- Booking system with landlord contact integration
+- Admin user management with approval workflow
+- Phone number collection for landlords
+- Property deletion with cascade cleanup
+- Location-based property search with map integration
+- Enhanced property cards with modern styling
+- Responsive UI with Tailwind CSS
+- Database persistence with migrations
 - Error handling and validation
+- WhatsApp/SMS/call/email integration for bookings
 
 🔄 **In Development**
-- Enhanced admin dashboard
-- Advanced property search
 - Payment integration
 - Email notifications
+- Advanced property search filters
 - Mobile app version
+- Real-time notifications
 
 ---
 
