@@ -33,13 +33,15 @@ services:
         value: json
 
   # Frontend Static Site
-  - type: static
+  - type: web
     name: renteasy-frontend
+    env: static
+    plan: starter
     buildCommand: |
       cd frontend
       npm install
       npm run build
-    publishPath: frontend/dist
+    staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_URL
         value: https://renteasy-backend.onrender.com
