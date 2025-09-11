@@ -50,10 +50,10 @@ services:
   - type: pserv
     name: renteasy-db
     plan: starter
-    ipAllowList: []
+    runtime: docker
+    dockerfilePath: ./Dockerfile.postgres
 
   # Redis Cache
   - type: redis
     name: renteasy-redis
     plan: starter
-    ipAllowList: []
