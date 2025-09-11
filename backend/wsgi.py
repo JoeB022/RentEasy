@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 """
 WSGI entry point for production deployment.
+This file should be in the backend directory for Render deployment.
 """
 
 import os
 import sys
 
-# Add the backend directory to the Python path
-backend_dir = os.path.join(os.path.dirname(__file__), 'backend')
-sys.path.insert(0, backend_dir)
-
-# Change to backend directory for proper module resolution
-os.chdir(backend_dir)
+# Add the current directory to the Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
 
 from app import create_app
 
