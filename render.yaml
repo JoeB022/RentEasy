@@ -52,7 +52,6 @@ services:
     plan: starter
     runtime: docker
     dockerfilePath: ./Dockerfile.postgres
-    startCommand: docker-entrypoint.sh postgres
 
   # Redis Cache
   - type: redis
