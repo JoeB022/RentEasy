@@ -1,0 +1,12 @@
+FROM postgres:15
+
+# Set environment variables
+ENV POSTGRES_DB=renteasy
+ENV POSTGRES_USER=renteasy_user
+ENV POSTGRES_PASSWORD=renteasy_password
+
+# Expose PostgreSQL port
+EXPOSE 5432
+
+# Use the default postgres entrypoint
+CMD ["postgres"]

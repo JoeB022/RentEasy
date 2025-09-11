@@ -50,8 +50,12 @@ services:
   - type: pserv
     name: renteasy-db
     plan: starter
+    runtime: docker
+    dockerfilePath: ./Dockerfile.postgres
+    startCommand: docker-entrypoint.sh postgres
 
   # Redis Cache
   - type: redis
     name: renteasy-redis
     plan: starter
+    ipAllowList: []
